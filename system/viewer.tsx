@@ -1,0 +1,189 @@
+'use client';
+
+import { useEffect, useRef } from "react";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Nullable } from "@babylonjs/core/types";
+import { Observer } from "@babylonjs/core/Misc/observable";
+import { FreeCamera } from "@babylonjs/core/Cameras/freeCamera";
+import { WebGPUEngine } from "@babylonjs/core/Engines/webgpuEngine";
+import { AbstractEngine } from "@babylonjs/core/Engines/abstractEngine";
+import { EngineStore } from "@babylonjs/core/Engines/engineStore";
+import { Engine } from "@babylonjs/core/Engines/engine";
+import { Scene } from "@babylonjs/core/scene";
+import { SceneManager } from "@babylonjs-toolkit/next";
+import GameManager from "../globals";
+
+// Note: Ensure loading screen is included in base viewer
+import "@babylonjs/core/Loading/loadingScreen";
+
+export declare type BabylonjsProps = {
+  webgpu?: boolean;
+  antialias?: boolean;
+  engineOptions?: any;
+  adaptToDeviceRatio?: boolean;
+  renderChildrenWhenReady?: boolean;
+  sceneOptions?: any;
+  onCreateScene: (scene: Scene) => void;
+  /**
+   * Automatically trigger engine resize when the canvas resizes (default: true)
+   */
+  observeCanvasResize?: boolean;
+  onRender?: (scene: Scene) => void;
+  children?: React.ReactNode;
+};
+
+function BaseSceneViewer(props: BabylonjsProps & React.CanvasHTMLAttributes<HTMLCanvasElement>) {
+  const { webgpu, antialias, engineOptions = {}, adaptToDeviceRatio, sceneOptions, onRender, onCreateScene, ...rest } = props;
+  const reactCanvas = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+      let disposeRequested = false;
+      let engine: AbstractEngine | null = null;
+      let scene: Scene | null = null;
+      let resizeListener: (() => void) | null = null;
+      let readyObserver: Nullable<Observer<Scene>> = null;
+
+      // Initialize the engine and scene (Note: Strict mode safety)
+      const initializeEngineAndScene = async (): Promise<void> => {
+          const canvas = reactCanvas.current;
+          if (!canvas) return;
+
+          try {
+              if (typeof navigator !== "undefined" && (navigator as any).gpu && webgpu) {
+                  try {
+                      const webgpuEngine = new WebGPUEngine(canvas, {
+                          ...engineOptions,
+                          antialias,
+                          adaptToDeviceRatio,
+                          setMaximumLimits: true,
+                          enableAllFeatures: true,
+                      });
+                      await webgpuEngine.initAsync(
+                          { jsPath: "scripts/glslang.js", wasmPath: "scripts/glslang.wasm" },
+                          { jsPath: "scripts/twgsl.js", wasmPath: "scripts/twgsl.wasm" }
+                      );
+
+                      if (disposeRequested) {
+                          try { webgpuEngine.dispose(); } catch (e) { console.warn(e); }
+                          return;
+                      }
+
+                      engine = webgpuEngine as unknown as AbstractEngine;
+                  } catch (webgpuError) {
+                      console.warn("WebGPU initialization failed, falling back to WebGL.", webgpuError);
+                      engine = null;
+                  }
+              }
+
+              if (!engine) {
+                  const fallbackEngine = new Engine(canvas, antialias, engineOptions, adaptToDeviceRatio);
+
+                  if (disposeRequested) {
+                      try { fallbackEngine.dispose(); } catch (e) { console.warn(e); }
+                      return;
+                  }
+
+                  engine = fallbackEngine;
+              }
+              if (!engine) return;
+              
+              scene = new Scene(engine, sceneOptions);
+              if (disposeRequested) {
+                  try { scene.dispose(); } catch (e) { console.warn(e); }
+                  try { engine.dispose(); } catch (e) { console.warn(e); }
+                  engine = null;
+                  scene = null;
+                  return;
+              }
+
+              const defaultCamera = new FreeCamera("defaultCamera", new Vector3(0, 5, -10), scene);
+              defaultCamera.setTarget(Vector3.Zero());
+              scene.activeCamera = defaultCamera;
+              
+              const handleSceneReady = (readyScene: Scene): void => {
+                  if (!disposeRequested) onCreateScene(readyScene);
+              };
+              if (scene.isReady()) {
+                  handleSceneReady(scene);
+              } else {
+                  readyObserver = scene.onReadyObservable.add((readyScene) => {
+                      if (disposeRequested) return;
+                      handleSceneReady(readyScene);
+                      if (scene && readyObserver) {
+                          try { scene.onReadyObservable.remove(readyObserver); } catch (e) { console.warn(e); }
+                          readyObserver = null;
+                      }
+                  });
+              }
+
+              if (disposeRequested) return;
+              engine.runRenderLoop(() => {
+                  if (disposeRequested || !scene || scene.isDisposed) return;
+                  if (typeof onRender === "function") onRender(scene);
+                  scene.render();
+              });
+
+              resizeListener = () => { if (!disposeRequested && engine) engine.resize(); };
+              if (typeof window !== "undefined") window.addEventListener("resize", resizeListener);
+          } catch (error) {
+              console.error("Failed to initialize Babylon viewer", error);
+
+              if (typeof window !== "undefined" && resizeListener) {
+                  try { window.removeEventListener("resize", resizeListener); } catch (e) { console.warn(e); }
+                  resizeListener = null;
+              }
+
+              if (scene && !scene.isDisposed) {
+                  try { scene.dispose(); } catch (e) { console.warn(e); }
+              }
+
+              if (engine) {
+                  try { engine.dispose(); } catch (e) { console.warn(e); }
+              }
+
+              engine = null;
+              scene = null;
+          }
+      };
+
+      initializeEngineAndScene();
+
+      return () => {
+          disposeRequested = true;
+
+          if (typeof window !== "undefined" && resizeListener) {
+              try { window.removeEventListener("resize", resizeListener); } catch (e) { console.warn(e); }
+          }
+
+          if (scene && readyObserver) {
+              try { scene.onReadyObservable.remove(readyObserver); } catch (e) { console.warn(e); }
+              readyObserver = null;
+          }
+
+          if (engine) {
+              try { engine.stopRenderLoop(); } catch (e) { console.warn(e); }
+              try { SceneManager.HideLoadingScreen(engine, false); } catch (e) { console.warn(e); }
+              try { SceneManager.HideSplashScreen(scene); } catch (e) { console.warn(e); }
+          }
+
+          // Note: The React navigation hook is owned by ReactRouterNavAdapter (app-wide),
+          // so it is intentionally NOT deleted here when the scene viewer unmounts.
+
+          if (scene && !scene.isDisposed) {
+              try { scene.dispose(); } catch (e) { console.warn(e); }
+          }
+
+          if (engine) {
+              try { engine.dispose(); } catch (e) { console.warn(e); }
+              engine = null;
+          }
+
+          scene = null;
+          resizeListener = null;
+      };
+  }, [webgpu, antialias, engineOptions, adaptToDeviceRatio, sceneOptions, onRender, onCreateScene]);
+
+  return <canvas ref={reactCanvas} tabIndex={0} {...rest} />;
+}
+
+export default BaseSceneViewer;
