@@ -30,5 +30,5 @@ await webgpuEngine.initAsync(
 ```
 
 ---
-React UI Framework Documentation: https://github.com/BabylonJS/BabylonToolkit/blob/master/Agent/references/react-framework.md
+React UI Framework Documentation: https://raw.githubusercontent.com/babylontoolkit/agent/main/references/react-framework.md
 ---
