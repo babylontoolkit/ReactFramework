@@ -1,4 +1,4 @@
-# Babylon Toolkit React Framework Submodule
+# Babylon Toolkit React Framework Submodule (ES6)
 
 To add submodule:
 ```
