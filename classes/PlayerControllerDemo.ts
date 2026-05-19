@@ -1,4 +1,5 @@
-import { AssetsManager, TransformNode } from "@babylonjs/core";
+import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { AssetsManager } from "@babylonjs/core/Misc/assetsManager";
 import { Scene } from "@babylonjs/core/scene";
 import { SceneManager, GameModeController } from "@babylonjs-toolkit/next";
 import { ThirdPersonPlayerController } from "@babylonjs-toolkit/dlc";

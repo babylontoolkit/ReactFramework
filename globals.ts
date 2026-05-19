@@ -4,7 +4,6 @@ import { Scene } from "@babylonjs/core/scene";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { FreeCamera } from "@babylonjs/core/Cameras/freeCamera";
 import { HavokPlugin } from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
-import HavokPhysics from "@babylonjs/havok";
 import { SceneManager, LocalMessageBus } from "@babylonjs-toolkit/next";
 import { INavigationState, UnifiedNavigateFunction, UnifiedNavigationOptions } from "./system/platform";
 
@@ -33,6 +32,7 @@ class GameManager {
             if (globalThis.HK == null || globalThis.HKP == null)
             {
                 // @ts-ignore - This initializes fresh physics for this scene
+                const { default: HavokPhysics } = await import("@babylonjs/havok");
                 globalThis.HK = await HavokPhysics();
                 globalThis.HKP = new HavokPlugin(false);
             }
