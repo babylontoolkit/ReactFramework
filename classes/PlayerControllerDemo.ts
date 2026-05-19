@@ -1,13 +1,11 @@
-import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { AssetsManager } from "@babylonjs/core/Misc/assetsManager";
-import { Scene } from "@babylonjs/core/scene";
-import { SceneManager, GameModeController } from "@babylonjs-toolkit/next";
-import { ThirdPersonPlayerController } from "@babylonjs-toolkit/dlc";
 import GameManager from "../globals";
 
-export class PlayerControllerDemo extends GameModeController {
-    
-    constructor(transform: TransformNode, scene: Scene, properties: any = {}, alias: string = "PlayerControllerDemo") {
+// ThirdPersonPlayerController ships in the @babylonjs-toolkit/dlc pack, which is
+// loaded at runtime via the script bundle (see globals.ts) and is therefore NOT
+// part of the UMD type definitions. Access it off the global TOOLKIT namespace.
+export class PlayerControllerDemo extends TOOLKIT.GameModeController {
+
+    constructor(transform: BABYLON.TransformNode, scene: BABYLON.Scene, properties: any = {}, alias: string = "PlayerControllerDemo") {
         super(transform, scene, properties, alias);
         this.hideSplashScreenDelayMs = 3000;
     }
@@ -17,12 +15,12 @@ export class PlayerControllerDemo extends GameModeController {
         GameManager.PostProgressStatus("Loading Player Armature ...");
         const playerPrefab = "playerarmature.gltf";
         const assetRepoPath = GameManager.PlaygroundRepo;
-        const assetsManager = new AssetsManager(this.scene);
+        const assetsManager = new BABYLON.AssetsManager(this.scene);
         assetsManager.addMeshTask("playerarmature", null, assetRepoPath, playerPrefab);
-        await SceneManager.LoadRuntimeAssets(assetsManager, [playerPrefab], ()=> {
-            const player = this.scene.getNodeByName("PlayerArmature") as TransformNode;
+        await TOOLKIT.SceneManager.LoadRuntimeAssets(assetsManager, [playerPrefab], ()=> {
+            const player = this.scene.getNodeByName("PlayerArmature") as BABYLON.TransformNode;
             if (player != null) {
-                const controller = new ThirdPersonPlayerController(player, this.scene, { arrowKeyRotation: true, smoothMotionSpeed:true, smoothChangeRate: 25.0 });
+                const controller = new PROJECT.ThirdPersonPlayerController(player, this.scene, { arrowKeyRotation: true, smoothMotionSpeed:true, smoothChangeRate: 25.0 });
                 controller.enableInput = true;
                 controller.attachCamera = true;
                 controller.moveSpeed = 5.335;
@@ -33,4 +31,4 @@ export class PlayerControllerDemo extends GameModeController {
     }
 }
 
-SceneManager.RegisterClass("PlayerControllerDemo", PlayerControllerDemo);
+TOOLKIT.SceneManager.RegisterClass("PlayerControllerDemo", PlayerControllerDemo);

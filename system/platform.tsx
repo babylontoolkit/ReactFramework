@@ -18,6 +18,7 @@ import { createContext, createElement, useContext, ReactNode } from "react";
 export interface INavigationState {
     gameMode?: string;
     sceneUrl?: string;
+    projectUrl?: string;
     auxiliaryData?: any;
 }
 

@@ -31,7 +31,7 @@ function SplashScreen() {
     const onLoadProgress = (data: AssetProgressMessage) => {
       const completed = data.completedAssets ?? 0;
       const total = data.totalAssets ?? 0;
-      setStatusText(data.message);
+      setStatusText(data.message ?? "Loading Scene ...");
     };
     GameManager.EventBus.OnMessage<AssetProgressMessage>("OnLoadProgress", onLoadProgress);
     return () => { GameManager.EventBus.RemoveHandler("OnLoadProgress", onLoadProgress); };

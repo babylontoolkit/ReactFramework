@@ -1,20 +1,11 @@
 'use client';
 
 import { useEffect, useRef } from "react";
-import { Vector3 } from "@babylonjs/core/Maths/math.vector";
-import { Nullable } from "@babylonjs/core/types";
-import { Observer } from "@babylonjs/core/Misc/observable";
-import { FreeCamera } from "@babylonjs/core/Cameras/freeCamera";
-import { WebGPUEngine } from "@babylonjs/core/Engines/webgpuEngine";
-import { AbstractEngine } from "@babylonjs/core/Engines/abstractEngine";
-import { EngineStore } from "@babylonjs/core/Engines/engineStore";
-import { Engine } from "@babylonjs/core/Engines/engine";
-import { Scene } from "@babylonjs/core/scene";
-import { SceneManager } from "@babylonjs-toolkit/next";
 import GameManager from "../globals";
 
-// Note: Ensure loading screen is included in base viewer
-import "@babylonjs/core/Loading/loadingScreen";
+// Note: BABYLON (babylonjs) and TOOLKIT (babylonjs-toolkit) are UMD globals
+// resolved via the "types" array in tsconfig.app.json. The loading screen is
+// already bundled in the babylonjs UMD distribution, so no side-effect import.
 
 export declare type BabylonjsProps = {
   webgpu?: boolean;
@@ -23,12 +14,12 @@ export declare type BabylonjsProps = {
   adaptToDeviceRatio?: boolean;
   renderChildrenWhenReady?: boolean;
   sceneOptions?: any;
-  onCreateScene: (scene: Scene) => void;
+  onCreateScene: (scene: BABYLON.Scene) => void;
   /**
    * Automatically trigger engine resize when the canvas resizes (default: true)
    */
   observeCanvasResize?: boolean;
-  onRender?: (scene: Scene) => void;
+  onRender?: (scene: BABYLON.Scene) => void;
   children?: React.ReactNode;
 };
 
@@ -38,10 +29,10 @@ function BaseSceneViewer(props: BabylonjsProps & React.CanvasHTMLAttributes<HTML
 
   useEffect(() => {
       let disposeRequested = false;
-      let engine: AbstractEngine | null = null;
-      let scene: Scene | null = null;
+      let engine: BABYLON.AbstractEngine | null = null;
+      let scene: BABYLON.Scene | null = null;
       let resizeListener: (() => void) | null = null;
-      let readyObserver: Nullable<Observer<Scene>> = null;
+      let readyObserver: BABYLON.Nullable<BABYLON.Observer<BABYLON.Scene>> = null;
 
       // Initialize the engine and scene (Note: Strict mode safety)
       const initializeEngineAndScene = async (): Promise<void> => {
@@ -51,7 +42,7 @@ function BaseSceneViewer(props: BabylonjsProps & React.CanvasHTMLAttributes<HTML
           try {
               if (typeof navigator !== "undefined" && (navigator as any).gpu && webgpu) {
                   try {
-                      const webgpuEngine = new WebGPUEngine(canvas, {
+                      const webgpuEngine = new BABYLON.WebGPUEngine(canvas, {
                           ...engineOptions,
                           antialias,
                           adaptToDeviceRatio,
@@ -68,7 +59,7 @@ function BaseSceneViewer(props: BabylonjsProps & React.CanvasHTMLAttributes<HTML
                           return;
                       }
 
-                      engine = webgpuEngine as unknown as AbstractEngine;
+                      engine = webgpuEngine as unknown as BABYLON.AbstractEngine;
                   } catch (webgpuError) {
                       console.warn("WebGPU initialization failed, falling back to WebGL.", webgpuError);
                       engine = null;
@@ -76,7 +67,7 @@ function BaseSceneViewer(props: BabylonjsProps & React.CanvasHTMLAttributes<HTML
               }
 
               if (!engine) {
-                  const fallbackEngine = new Engine(canvas, antialias, engineOptions, adaptToDeviceRatio);
+                  const fallbackEngine = new BABYLON.Engine(canvas, antialias, engineOptions, adaptToDeviceRatio);
 
                   if (disposeRequested) {
                       try { fallbackEngine.dispose(); } catch (e) { console.warn(e); }
@@ -86,8 +77,8 @@ function BaseSceneViewer(props: BabylonjsProps & React.CanvasHTMLAttributes<HTML
                   engine = fallbackEngine;
               }
               if (!engine) return;
-              
-              scene = new Scene(engine, sceneOptions);
+
+              scene = new BABYLON.Scene(engine, sceneOptions);
               if (disposeRequested) {
                   try { scene.dispose(); } catch (e) { console.warn(e); }
                   try { engine.dispose(); } catch (e) { console.warn(e); }
@@ -96,11 +87,11 @@ function BaseSceneViewer(props: BabylonjsProps & React.CanvasHTMLAttributes<HTML
                   return;
               }
 
-              const defaultCamera = new FreeCamera("defaultCamera", new Vector3(0, 5, -10), scene);
-              defaultCamera.setTarget(Vector3.Zero());
+              const defaultCamera = new BABYLON.FreeCamera("defaultCamera", new BABYLON.Vector3(0, 5, -10), scene);
+              defaultCamera.setTarget(BABYLON.Vector3.Zero());
               scene.activeCamera = defaultCamera;
-              
-              const handleSceneReady = (readyScene: Scene): void => {
+
+              const handleSceneReady = (readyScene: BABYLON.Scene): void => {
                   if (!disposeRequested) onCreateScene(readyScene);
               };
               if (scene.isReady()) {
@@ -162,8 +153,8 @@ function BaseSceneViewer(props: BabylonjsProps & React.CanvasHTMLAttributes<HTML
 
           if (engine) {
               try { engine.stopRenderLoop(); } catch (e) { console.warn(e); }
-              try { SceneManager.HideLoadingScreen(engine, false); } catch (e) { console.warn(e); }
-              try { SceneManager.HideSplashScreen(scene); } catch (e) { console.warn(e); }
+              try { TOOLKIT.SceneManager.HideLoadingScreen(engine, false); } catch (e) { console.warn(e); }
+              try { TOOLKIT.SceneManager.HideSplashScreen(scene); } catch (e) { console.warn(e); }
           }
 
           // Note: The React navigation hook is owned by ReactRouterNavAdapter (app-wide),

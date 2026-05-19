@@ -1,10 +1,6 @@
-import { TransformNode } from "@babylonjs/core";
-import { Scene } from "@babylonjs/core/scene";
-import { SceneManager, GameModeController } from "@babylonjs-toolkit/next";
-
-export class DefaultGameMode extends GameModeController {
+export class DefaultGameMode extends TOOLKIT.GameModeController {
     
-    constructor(transform: TransformNode, scene: Scene, properties: any = {}, alias: string = "DefaultGameMode") {
+    constructor(transform: BABYLON.TransformNode, scene: BABYLON.Scene, properties: any = {}, alias: string = "DefaultGameMode") {
         super(transform, scene, properties, alias);
     }
 
@@ -53,4 +49,4 @@ export class DefaultGameMode extends GameModeController {
     }
 }
 
-SceneManager.RegisterClass("DefaultGameMode", DefaultGameMode);
+TOOLKIT.SceneManager.RegisterClass("DefaultGameMode", DefaultGameMode);
