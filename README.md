@@ -1,8 +1,8 @@
 # Babylon Toolkit React Framework Submodule (UMD)
 
-To add submodule (UMD):
+To add submodule (UMD ONLY):
 ```
-git submodule add https://github.com/babylontoolkit/ClassicFramework.git src/babylon
+git submodule add https://github.com/babylontoolkit/ReaactFramework.git src/babylon
 git commit -m "Add React-Framework as babylon submodule"
 ```
 
