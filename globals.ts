@@ -190,8 +190,8 @@ class GameManager {
     // Development Properties
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    /** URL of the playground repository (https://babylontoolkit.github.io/assets/playground/) */
-    public static get PlaygroundRepo(): string { return "https://babylontoolkit.github.io/assets/playground/"; }
+    /** URL of the playground repository (https://repo.babylontoolkit.com/playground/) */
+    public static get PlaygroundRepo(): string { return "https://repo.babylontoolkit.com/playground/"; }
 
     /** Indicates if the game is running in development mode */
     public static get IsDevelopmentMode(): boolean { return process.env.NODE_ENV === "development"; }
