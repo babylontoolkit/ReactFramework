@@ -1,4 +1,4 @@
-# Babylon Toolkit React Framework Submodule (UMD)
+# Babylon Toolkit React Framework Submodule (UMD ONLY)
 
 To add submodule (UMD ONLY):
 ```
