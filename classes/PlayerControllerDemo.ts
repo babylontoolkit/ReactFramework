@@ -7,7 +7,6 @@ export class PlayerControllerDemo extends TOOLKIT.GameModeController {
 
     constructor(transform: BABYLON.TransformNode, scene: BABYLON.Scene, properties: any = {}, alias: string = "PlayerControllerDemo") {
         super(transform, scene, properties, alias);
-        this.hideSplashScreenDelayMs = 3000;
     }
 
     protected async createScene(data?: any): Promise<void> {

@@ -3,7 +3,6 @@ export class FreeCameraMode extends TOOLKIT.GameModeController {
 
     constructor(transform: BABYLON.TransformNode, scene: BABYLON.Scene, properties: any = {}, alias: string = "FreeCameraMode") {
         super(transform, scene, properties, alias);
-        this.hideSplashScreenDelayMs = 3000;
     }
 
     protected destroy(): void {
