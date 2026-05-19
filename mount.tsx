@@ -1,59 +1,67 @@
 'use client';
-/*
- * <BabylonMount /> — router-agnostic, SSR-safe entry point.
- *
- * All Babylon Toolkit imports are loaded behind React.lazy so the UMD
- * globals (BABYLON / TOOLKIT / HavokPhysics) are only touched on the
- * client. Drop into any host: Next.js App Router, TanStack Start,
- * Remix, or a plain Vite + BrowserRouter SPA — no per-host glue needed
- * beyond a NavigationProvider adapter for your router.
- *
- * Usage (Next.js):
- *   import dynamic from "next/dynamic";
- *   const BabylonMount = dynamic(() => import("@/babylon/mount"), { ssr: false });
- *
- * Usage (TanStack Start):
- *   export const Route = createFileRoute("/play")({
- *     ssr: false,
- *     component: () => <BabylonMount />,
- *   });
- *
- * Usage (Vite + BrowserRouter): just <BabylonMount /> inside a <Route />.
- */
-import { lazy, Suspense, type ReactNode } from "react";
 
-const LazyViewer = lazy(async () => {
-  const [{ default: BabylonSceneViewer }, { default: ApplicationRoute }] = await Promise.all([
-    import("./system/babylon"),
-    import("./system/routing"),
-  ]);
+// SSR-safe, router-agnostic mount point for the Babylon Toolkit scene.
+//
+// All Babylon imports are deferred behind React.lazy so the heavy 3D engine
+// and the `BABYLON` / `TOOLKIT` UMD globals are only touched in the browser,
+// after this component mounts. Use this from any host (BrowserRouter,
+// TanStack Start, Next.js App Router, Remix) instead of importing
+// `./system/babylon` directly from a route file.
+//
+// Hosts that run their own router (BrowserRouter, MemoryRouter) should pass
+// `wrapWithReactRouterAdapter={false}` and provide their own adapter (see
+// `src/routing/router.tsx` for the reference adapter pattern).
+//
+// In SSR frameworks:
+//   - Next.js (App Router):
+//       const BabylonMount = dynamic(() => import('@/babylon/mount'), { ssr: false });
+//   - TanStack Start (route file):
+//       export const Route = createFileRoute('/play')({ ssr: false, ... });
+//   - Plain BrowserRouter SPA:
+//       <BabylonMount /> works as-is.
+
+import { lazy, Suspense, type ReactNode } from "react";
+import { DefaultBabylonPreloader } from "./custom/loading";
+
+const InnerScene = lazy(async () => {
+  const [{ default: BabylonSceneViewer }, { default: ApplicationRoute }] =
+    await Promise.all([
+      import("./system/babylon"),
+      import("./system/routing"),
+    ]);
   return {
-    default: function MountedViewer() {
-      return (
-        <ApplicationRoute allowDevMode={true}>
-          <BabylonSceneViewer fullPage={true} allowQueryParams={true} enableCustomOverlay={false} />
-        </ApplicationRoute>
-      );
-    },
+    default: ({
+      allowDevMode = true,
+      fullPage = true,
+      allowQueryParams = true,
+      enableCustomOverlay = false,
+    }: SceneProps) => (
+      <ApplicationRoute allowDevMode={allowDevMode}>
+        <BabylonSceneViewer
+          fullPage={fullPage}
+          allowQueryParams={allowQueryParams}
+          enableCustomOverlay={enableCustomOverlay}
+        />
+      </ApplicationRoute>
+    ),
   };
 });
 
-export interface BabylonMountProps {
-  fallback?: ReactNode;
-}
+export type SceneProps = {
+  allowDevMode?: boolean;
+  fullPage?: boolean;
+  allowQueryParams?: boolean;
+  enableCustomOverlay?: boolean;
+};
 
-export default function BabylonMount({ fallback }: BabylonMountProps = {}) {
+export type BabylonMountProps = SceneProps & {
+  fallback?: ReactNode;
+};
+
+export default function BabylonMount({ fallback, ...sceneProps }: BabylonMountProps) {
   return (
-    <Suspense
-      fallback={
-        fallback ?? (
-          <div style={{ width: "100%", height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#2A2342", color: "#E0684B", fontFamily: "system-ui, sans-serif" }}>
-            Loading 3D engine...
-          </div>
-        )
-      }
-    >
-      <LazyViewer />
+    <Suspense fallback={fallback ?? <DefaultBabylonPreloader />}>
+      <InnerScene {...sceneProps} />
     </Suspense>
   );
 }

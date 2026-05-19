@@ -7,6 +7,8 @@ import GameManager from "../globals";
 // resolved via the "types" array in tsconfig.app.json. The loading screen is
 // already bundled in the babylonjs UMD distribution, so no side-effect import.
 
+const DEFAULT_ENGINE_OPTIONS = {};
+
 export declare type BabylonjsProps = {
   webgpu?: boolean;
   antialias?: boolean;
@@ -24,7 +26,7 @@ export declare type BabylonjsProps = {
 };
 
 function BaseSceneViewer(props: BabylonjsProps & React.CanvasHTMLAttributes<HTMLCanvasElement>) {
-  const { webgpu, antialias, engineOptions = {}, adaptToDeviceRatio, sceneOptions, onRender, onCreateScene, ...rest } = props;
+  const { webgpu, antialias, engineOptions = DEFAULT_ENGINE_OPTIONS, adaptToDeviceRatio, sceneOptions, onRender, onCreateScene, ...rest } = props;
   const reactCanvas = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {

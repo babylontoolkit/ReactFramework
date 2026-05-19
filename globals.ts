@@ -6,13 +6,20 @@ import "babylonjs-gui";
 import "babylonjs-addons";
 import "babylonjs-loaders";
 import "babylonjs-materials";
-import "babylonjs-inspector";
 import "babylonjs-toolkit";
 
 import { INavigationState, UnifiedNavigateFunction, UnifiedNavigationOptions } from "./system/platform";
-// Typed alias for Babylon Toolkit runtime globals (see globals.d.ts).
-const G = globalThis as unknown as { HK: any; HKP: any; HAVOKPHYSCIS_JS: any; SCRIPTBUNDLE_JS: any };
 
+
+// Single typed alias for the runtime globals declared in globals.d.ts.
+// Avoids sprinkling `(globalThis as any)` casts throughout the file.
+const G = globalThis as unknown as {
+  HAVOKPHYSCIS_JS: any;
+  SCRIPTBUNDLE_JS: any;
+  HK: any;
+  HKP: any;
+  HavokPhysics: () => Promise<any>;
+};
 
 class GameManager {
     /** Initialize the game runtime environment */
@@ -46,7 +53,7 @@ class GameManager {
         {
             if (G.HK == null || G.HKP == null)
             {
-                G.HK = await HavokPhysics();
+                G.HK = await G.HavokPhysics();
                 G.HKP = new BABYLON.HavokPlugin(false);
             }
             if (!scene.isDisposed && G.HK != null && G.HKP != null)
@@ -55,8 +62,8 @@ class GameManager {
             }
             const cleanupGlobals = () =>
             {
-                if (G.HKP) delete (G as any).HKP;
-                if (G.HK) delete (G as any).HK;
+                if (globalThis["HKP"]) delete globalThis["HKP"];
+                if (globalThis["HK"]) delete globalThis["HK"];
             };
             if (!scene.isDisposed)
             {
