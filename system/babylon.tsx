@@ -94,12 +94,20 @@ function BabylonSceneViewer(props: SceneViewerProps & React.CanvasHTMLAttributes
         gameModeAuxiliaryData = location?.state?.auxiliaryData || gameModeAuxiliaryData;
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
         if (isDevelopment === true) { // Note: Unity Editor Development Preview Query Param Support
+          // babylonGameMode = defaultPageUrl.searchParams.get("mode") || babylonGameMode;
+          // let devSceneUrl = defaultPageUrl.searchParams.get("scene") || null;
+          // if (devSceneUrl != null && devSceneUrl !== "") {
+          //   rootPath = devSceneUrl.substring(0, devSceneUrl.lastIndexOf("/") + 1);
+          //   sceneFile = devSceneUrl.substring(devSceneUrl.lastIndexOf("/") + 1);
+          // }
           babylonGameMode = defaultPageUrl.searchParams.get("mode") || babylonGameMode;
-          let devSceneUrl = defaultPageUrl.searchParams.get("scene") || null;
-          if (devSceneUrl != null && devSceneUrl !== "") {
-            rootPath = devSceneUrl.substring(0, devSceneUrl.lastIndexOf("/") + 1);
-            sceneFile = devSceneUrl.substring(devSceneUrl.lastIndexOf("/") + 1);
+          const qpSceneUrl = defaultPageUrl.searchParams.get("scene");
+          if (qpSceneUrl) {
+            rootPath = qpSceneUrl.substring(0, qpSceneUrl.lastIndexOf("/") + 1);
+            sceneFile = qpSceneUrl.substring(qpSceneUrl.lastIndexOf("/") + 1);
           }
+          const qpProjectUrl = defaultPageUrl.searchParams.get("project");
+          if (qpProjectUrl) gameProjectScriptBundle = qpProjectUrl;
         }
       }
       let babylonRootPath: string = rootPath || GameManager.PlaygroundRepo; // Note: Default to AWS Playground Repo
