@@ -10,7 +10,7 @@ import "babylonjs-toolkit";
 
 import { INavigationState, UnifiedNavigateFunction, UnifiedNavigationOptions } from "./system/platform";
 
-// Single typed alias for the runtime globals declared in globals.d.ts.
+// Single typed alias for the runtime globals declared in project.d.ts.
 // Avoids sprinkling `(globalThis as any)` casts throughout the file.
 const G = globalThis as unknown as {
   HAVOKPHYSCIS_JS: any;
