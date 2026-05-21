@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 // Global Side Effects
 import "babylonjs";
@@ -9,7 +9,6 @@ import "babylonjs-materials";
 import "babylonjs-toolkit";
 
 import { INavigationState, UnifiedNavigateFunction, UnifiedNavigationOptions } from "./system/platform";
-
 
 // Single typed alias for the runtime globals declared in globals.d.ts.
 // Avoids sprinkling `(globalThis as any)` casts throughout the file.
@@ -62,8 +61,8 @@ class GameManager {
             }
             const cleanupGlobals = () =>
             {
-                if (globalThis["HKP"]) delete globalThis["HKP"];
-                if (globalThis["HK"]) delete globalThis["HK"];
+                if (G.HKP) delete G.HKP;
+                if (G.HK) delete G.HK;
             };
             if (!scene.isDisposed)
             {

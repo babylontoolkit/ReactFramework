@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useUnifiedNavigation, UnifiedNavigateFunction } from "../system/platform";
 import "./overlay.css";

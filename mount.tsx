@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 // SSR-safe, router-agnostic mount point for the Babylon Toolkit scene.
 //
