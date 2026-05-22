@@ -29,17 +29,9 @@ class GameManager {
         if (enablePhysics == true) {
             G.HAVOKPHYSCIS_JS = G.HAVOKPHYSCIS_JS || await BABYLON.Tools.LoadScriptAsync(GameManager.HavokEngineUrl);
         }
-        // Load Project-specific script bundle if provided (e.g. for custom scene scripts, gameplay logic, etc.)
-        let projectScriptBundle = scriptBundle;
-        if (projectScriptBundle == null || projectScriptBundle.length == 0) {
-            // Default script bundle URL (can be overridden by providing a scriptBundle parameter)
-            projectScriptBundle = GameManager.PlaygroundRepo + "default.playground.js";
-        }
-        if (projectScriptBundle != null && projectScriptBundle.toLowerCase() === "default.playground.js") {
-            projectScriptBundle = GameManager.PlaygroundRepo + "default.playground.js";
-        }
-        if (projectScriptBundle != null && projectScriptBundle.length > 0) {
-            G.SCRIPTBUNDLE_JS = G.SCRIPTBUNDLE_JS || await BABYLON.Tools.LoadScriptAsync(projectScriptBundle);
+        // Note: Support legacy project script bundle loading for backwards compatibility.
+        if (scriptBundle != null && scriptBundle.length > 0) {
+            G.SCRIPTBUNDLE_JS = G.SCRIPTBUNDLE_JS || await BABYLON.Tools.LoadScriptAsync(scriptBundle);
         }
         await import("./classes/DefaultGameMode");
         await import("./classes/FreeCameraMode");
@@ -89,7 +81,6 @@ class GameManager {
     * GameManager.NavigateTo("/play", {
     *     gameMode: "PlayerControllerDemo",
     *     sceneUrl: GameManager.PlaygroundRepo + "samplescene.gltf",
-    *     projectUrl: GameManager.PlaygroundRepo + "default.playground.js",
     * });
      */
     public static NavigateTo(route: string, state: INavigationState | null = null): void {

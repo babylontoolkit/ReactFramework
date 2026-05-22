@@ -15,7 +15,7 @@ export declare type SceneViewerProps = {
   fullPage?: boolean;
   gameMode?: string;
   sceneUrl?: string;
-  projectUrl?: string;
+  scriptUrl?: string;
   auxiliaryData?: any;
   allowQueryParams?: boolean;
   enableCustomOverlay?: boolean;
@@ -43,7 +43,7 @@ export declare type AssetProgressMessage = {
  * UMD Interactive Babylon Toolkit Scene Viewer (GLTF)
  */
 function BabylonSceneViewer(props: SceneViewerProps & React.CanvasHTMLAttributes<HTMLCanvasElement>) {
-  const { fullPage, gameMode, sceneUrl, projectUrl, auxiliaryData, allowQueryParams, enableCustomOverlay  } = props;
+  const { fullPage, gameMode, sceneUrl, scriptUrl, auxiliaryData, allowQueryParams, enableCustomOverlay  } = props;
   const { location } = useUnifiedNavigation();
   const createScene = useCallback(async (scene:BABYLON.Scene) => {
     if (scene.isDisposed) return; // Note: Strict mode safety
@@ -54,9 +54,9 @@ function BabylonSceneViewer(props: SceneViewerProps & React.CanvasHTMLAttributes
     let gameModeController: TOOLKIT.ScriptComponent = null;
     let gameModeAuxiliaryData:any | undefined = auxiliaryData;
     let gameModeReadyInvoked: boolean = false;
-    let gameProjectScriptBundle: string = projectUrl || null;
+    let gameProjectScriptBundle: string = scriptUrl || null;
     if (allowQueryParams === true) {
-        gameProjectScriptBundle = location?.state?.projectUrl || gameProjectScriptBundle;
+        gameProjectScriptBundle = location?.state?.scriptUrl || gameProjectScriptBundle;
     }
     const invokeGameModeReady = async (): Promise<void> => {
       if (gameModeReadyInvoked || disposed || scene.isDisposed) return;
@@ -106,8 +106,8 @@ function BabylonSceneViewer(props: SceneViewerProps & React.CanvasHTMLAttributes
             rootPath = qpSceneUrl.substring(0, qpSceneUrl.lastIndexOf("/") + 1);
             sceneFile = qpSceneUrl.substring(qpSceneUrl.lastIndexOf("/") + 1);
           }
-          const qpProjectUrl = defaultPageUrl.searchParams.get("project");
-          if (qpProjectUrl) gameProjectScriptBundle = qpProjectUrl;
+          const qpScriptUrl = defaultPageUrl.searchParams.get("script");
+          if (qpScriptUrl) gameProjectScriptBundle = qpScriptUrl;
         }
       }
       let babylonRootPath: string = rootPath || GameManager.PlaygroundRepo; // Note: Default to AWS Playground Repo
@@ -234,7 +234,7 @@ function BabylonSceneViewer(props: SceneViewerProps & React.CanvasHTMLAttributes
         console.error("Failed to remove dispose observer", e);
       }
     }
-  }, [gameMode, sceneUrl, projectUrl, auxiliaryData, allowQueryParams, location]);
+  }, [gameMode, sceneUrl, scriptUrl, auxiliaryData, allowQueryParams, location]);
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
   // OPTIONAL: Add custom loading div over the root div and disable the default loading screen
