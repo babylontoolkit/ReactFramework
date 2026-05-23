@@ -11,13 +11,11 @@ declare global {
   // Babylon Toolkit UMD globals
   const BABYLON: any;
   const TOOLKIT: any;
+  const PROJECT: any;
 
   // Havok physics — loaded dynamically via BABYLON.Tools.LoadScriptAsync
   // and exposed as a global factory function on `globalThis`.
   function HavokPhysics(): Promise<any>;
-
-  // Project script bundle global hook (provided by default.playground.js)
-  const PROJECT: any;
 
   // Runtime caches stashed on globalThis so async script loads happen once
   // across hot reloads, navigation and React StrictMode double-invokes.
