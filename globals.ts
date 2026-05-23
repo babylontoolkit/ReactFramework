@@ -39,32 +39,7 @@ class GameManager {
         await import("./classes/PlaygroundDemoScene");
         await import("./classes/VehicleControllerDemo");
         if (scene.isDisposed) return; // Note: Strict mode safety
-        // Havok is only loaded once globally AFTER SceneManager.InitializeRuntime
-        if (enablePhysics)
-        {
-            if (G.HK == null || G.HKP == null)
-            {
-                G.HK = await G.HavokPhysics();
-                G.HKP = new BABYLON.HavokPlugin(false);
-            }
-            if (!scene.isDisposed && G.HK != null && G.HKP != null)
-            {
-                scene.enablePhysics(new BABYLON.Vector3(0,-9.81,0), G.HKP);
-            }
-            const cleanupGlobals = () =>
-            {
-                if (G.HKP) delete G.HKP;
-                if (G.HK) delete G.HK;
-            };
-            if (!scene.isDisposed)
-            {
-                scene.onDisposeObservable.addOnce(cleanupGlobals);
-            }
-            else
-            {
-                cleanupGlobals(); // Note: Force clean up if scene was disposed already
-            }
-        }
+        if (enablePhysics === true) TOOLKIT.SceneManager.InitializePhysicsEngine(scene, new BABYLON.Vector3(0,-9.81,0), true);
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
