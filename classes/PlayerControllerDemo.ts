@@ -1,8 +1,6 @@
 import GameManager from "../globals";
 
-// ThirdPersonPlayerController ships in the @babylonjs-toolkit/dlc pack, which is
-// loaded at runtime via the script bundle (see globals.ts) and is therefore NOT
-// part of the UMD type definitions. Access it off the global TOOLKIT namespace.
+// ThirdPersonPlayerController ships in the @babylonjs-toolkit/next package.
 export class PlayerControllerDemo extends TOOLKIT.GameModeController {
 
     constructor(transform: BABYLON.TransformNode, scene: BABYLON.Scene, properties: any = {}, alias: string = "PlayerControllerDemo") {
