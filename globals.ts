@@ -39,7 +39,7 @@ class GameManager {
         await import("./classes/PlaygroundDemoScene");
         await import("./classes/VehicleControllerDemo");
         if (scene.isDisposed) return; // Note: Strict mode safety
-        if (enablePhysics === true) TOOLKIT.SceneManager.InitializePhysicsEngine(scene, new BABYLON.Vector3(0,-9.81,0), true);
+        if (enablePhysics === true) await TOOLKIT.SceneManager.InitializePhysicsEngine(scene, new BABYLON.Vector3(0,-9.81,0), true);
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
