@@ -2,7 +2,7 @@
 
 To add submodule:
 ```
-git submodule add https://github.com/babylontoolkit/NextReactFramework.git src/babylon
+git submodule add https://github.com/babylontoolkit/ReactFramework.git src/babylon
 git commit -m "Add React-Framework as babylon submodule"
 ```
 
