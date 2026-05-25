@@ -1,19 +1,28 @@
 "use client";
 
-// Global Side Effects
-import "babylonjs";
-import "babylonjs-gui";
-import "babylonjs-addons";
-import "babylonjs-loaders";
-import "babylonjs-materials";
-import "babylonjs-toolkit";
+import { Scene, Tools, Vector3 } from "@babylonjs/core";
+import { HavokPlugin } from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
+import HavokPhysics from "@babylonjs/havok";
+import { SceneManager } from "@babylonjs-toolkit/next/scenemanager";
+import { LocalMessageBus } from "@babylonjs-toolkit/next/localmessagebus";
+
+// =============================================================================================
+// Side effects — register extended packages into BabylonJS at import time
+// =============================================================================================
+import "@babylonjs/materials";
+import "@babylonjs/loaders";
+import "@babylonjs/gui";
+import "@babylonjs/havok";
+import "@babylonjs/addons";
+import "@babylonjs/serializers";
+// =============================================================================================
 
 import { INavigationState, UnifiedNavigateFunction, UnifiedNavigationOptions } from "./system/platform";
 
 // Single typed alias for the runtime globals declared in project.d.ts.
 // Avoids sprinkling `(globalThis as any)` casts throughout the file.
 const G = globalThis as unknown as {
-  HAVOKPHYSCIS_JS: any;
+  HAVOKPHYSICS_JS: any;
   SCRIPTBUNDLE_JS: any;
   HK: any;
   HKP: any;
@@ -21,17 +30,15 @@ const G = globalThis as unknown as {
 };
 
 class GameManager {
+    /** No-op static initializer to ensure global variables are registered. */
+    public static Awaken(): void {}
     /** Initialize the game runtime environment */
-    public static async InitializeRuntime(scene:BABYLON.Scene, scriptBundle:string, enablePhysics:boolean = true, showLoadingScreen:boolean = true, hideEngineLoadingUI:boolean = false): Promise<void> {
+    public static async InitializeRuntime(scene:Scene, scriptBundle:string, enablePhysics:boolean = true, showLoadingScreen:boolean = true, hideEngineLoadingUI:boolean = false): Promise<void> {
         if (scene.isDisposed) return; // Note: Strict mode safety
-        await TOOLKIT.SceneManager.InitializeRuntime(scene.getEngine(), { showDefaultLoadingScreen: showLoadingScreen, hideLoadingUIWithEngine: hideEngineLoadingUI });
-        // Note: The physics engine is loaded globally on the first scene initialization that requests it, and is not re-loaded for subsequent scenes to optimize load times. If physics is enabled but fails to load, the game will continue running without physics and log an error.
-        if (enablePhysics == true) {
-            G.HAVOKPHYSCIS_JS = G.HAVOKPHYSCIS_JS || await BABYLON.Tools.LoadScriptAsync(GameManager.HavokEngineUrl);
-        }
+        await SceneManager.InitializeRuntime(scene.getEngine(), { showDefaultLoadingScreen: showLoadingScreen, hideLoadingUIWithEngine: hideEngineLoadingUI });
         // Note: Support legacy project script bundle loading for backwards compatibility.
         if (scriptBundle != null && scriptBundle.length > 0) {
-            G.SCRIPTBUNDLE_JS = G.SCRIPTBUNDLE_JS || await BABYLON.Tools.LoadScriptAsync(scriptBundle);
+            G.SCRIPTBUNDLE_JS = G.SCRIPTBUNDLE_JS || await Tools.LoadScriptAsync(scriptBundle);
         }
         await import("./classes/DefaultGameMode");
         await import("./classes/FreeCameraMode");
@@ -39,7 +46,32 @@ class GameManager {
         await import("./classes/PlaygroundDemoScene");
         await import("./classes/VehicleControllerDemo");
         if (scene.isDisposed) return; // Note: Strict mode safety
-        if (enablePhysics === true) await TOOLKIT.SceneManager.InitializePhysicsEngine(scene, new BABYLON.Vector3(0,-9.81,0), true);
+        if (enablePhysics)
+        {
+            if (G.HK == null || G.HKP == null)
+            {
+                // @ts-ignore - This initializes fresh physics for this scene
+                G.HK = await HavokPhysics();
+                G.HKP = new HavokPlugin(false);
+            }
+            if (!scene.isDisposed && G.HK != null && G.HKP != null)
+            {
+                scene.enablePhysics(new Vector3(0,-9.81,0), G.HKP);
+            }
+            const cleanupGlobals = () =>
+            {
+                if (G.HKP) delete G.HKP;
+                if (G.HK) delete G.HK;
+            };
+            if (!scene.isDisposed)
+            {
+                scene.onDisposeObservable.addOnce(cleanupGlobals);
+            }
+            else
+            {
+                cleanupGlobals(); // Note: Force clean up if scene was disposed already
+            }
+        }        
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -87,8 +119,7 @@ class GameManager {
     public static SetReactNavigationHook(navigateToFunction: UnifiedNavigateFunction | null): void {
         GameManager.ReactNavigationFunction = navigateToFunction;
     }
-    /** Deletes the React router navigation hook on the game manager to prevent memory leaks and unintended navigation after scene disposal.
-     */
+    /** Deletes the React router navigation hook on the game manager to prevent memory leaks and unintended navigation after scene disposal. */
     public static DeleteReactNavigationHook(): void {
         if (GameManager.ReactNavigationFunction != null) {
             GameManager.ReactNavigationFunction = null;
@@ -127,7 +158,7 @@ class GameManager {
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Synchronous Message Bus
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    private static _SynchronousMessageBus: TOOLKIT.LocalMessageBus | null = null;
+    private static _SynchronousMessageBus: LocalMessageBus | null = null;
     /** Synchronous event message bus 
      * @examples 
      * // Handle myevent message
@@ -137,8 +168,8 @@ class GameManager {
      * // Post myevent message
      * GameManager.EventBus.PostMessage("myevent", "Hello World!");
     */
-    public static get EventBus(): TOOLKIT.LocalMessageBus {
-        if (GameManager._SynchronousMessageBus == null) GameManager._SynchronousMessageBus = new TOOLKIT.LocalMessageBus();
+    public static get EventBus(): LocalMessageBus {
+        if (GameManager._SynchronousMessageBus == null) GameManager._SynchronousMessageBus = new LocalMessageBus();
         return GameManager._SynchronousMessageBus;
     }
     /** Post system loading progress status message */
@@ -152,7 +183,7 @@ class GameManager {
     }   
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Development Properties
+    // Generic Global Properties
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /** URL of the playground repository (https://repo.babylontoolkit.com/playground/) */

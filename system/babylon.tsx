@@ -6,10 +6,10 @@ import BaseSceneViewer from "./viewer";
 import CustomOverlay from "../custom/overlay";
 import SplashScreen from "../custom/splash";
 import GameManager from "../globals";
-import "./babylon.css";
+import { SceneManager, ScriptComponent, Utilities } from "@babylonjs-toolkit/next/scenemanager";
+import { ImportMeshAsync, ISceneLoaderProgressEvent, Scene, Tools, TransformNode } from "@babylonjs/core";
 
-// Note: BABYLON (babylonjs) and TOOLKIT (babylonjs-toolkit) are UMD globals
-// resolved via the "types" array in tsconfig.app.json.
+import "./babylon.css";
 
 export declare type SceneViewerProps = {
   fullPage?: boolean;
@@ -45,13 +45,13 @@ export declare type AssetProgressMessage = {
 function BabylonSceneViewer(props: SceneViewerProps & React.CanvasHTMLAttributes<HTMLCanvasElement>) {
   const { fullPage, gameMode, sceneUrl, scriptUrl, auxiliaryData, allowQueryParams, enableCustomOverlay  } = props;
   const { location } = useUnifiedNavigation();
-  const createScene = useCallback(async (scene:BABYLON.Scene) => {
+  const createScene = useCallback(async (scene:Scene) => {
     if (scene.isDisposed) return; // Note: Strict mode safety
     let disposed = false;
     let disposeObserver = scene.onDisposeObservable.add(() => { disposed = true; });
     let rootPath: string | null = sceneUrl != null && sceneUrl !== "" ? sceneUrl.substring(0, sceneUrl.lastIndexOf("/") + 1) : null;
     let sceneFile: string | null = sceneUrl != null && sceneUrl !== "" ? sceneUrl.substring(sceneUrl.lastIndexOf("/") + 1) : null;
-    let gameModeController: TOOLKIT.ScriptComponent = null;
+    let gameModeController: ScriptComponent = null;
     let gameModeAuxiliaryData:any | undefined = auxiliaryData;
     let gameModeReadyInvoked: boolean = false;
     let gameProjectScriptBundle: string = scriptUrl || null;
@@ -71,7 +71,7 @@ function BabylonSceneViewer(props: SceneViewerProps & React.CanvasHTMLAttributes
     // STEP 1 - Initialize the global runtime scene properties and react navigation system
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     try {
-      TOOLKIT.SceneManager.ShowSplashScreen(); // Note: Always Show Game Manager Splash Screen
+      SceneManager.ShowSplashScreen(); // Note: Always Show Game Manager Splash Screen
       await GameManager.InitializeRuntime(scene, gameProjectScriptBundle, true, false, false);
       if (disposed || scene.isDisposed) return; // Note: Strict mode safety
       ////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -114,16 +114,16 @@ function BabylonSceneViewer(props: SceneViewerProps & React.CanvasHTMLAttributes
       let babylonSceneFile: string = sceneFile || "_blank";
       // Instantiate Game Mode Script Component Before Loading Assets (Set Auxiliary Data As Script Component Property Bag)
       if (babylonGameMode != null && babylonGameMode !== "") {
-        const ScriptComponentClass = TOOLKIT.Utilities.InstantiateClass(babylonGameMode);
+        const ScriptComponentClass = Utilities.InstantiateClass(babylonGameMode);
         if (ScriptComponentClass != null) {
-            gameModeController = new ScriptComponentClass(new BABYLON.TransformNode("GameMode", scene), scene, {});
+            gameModeController = new ScriptComponentClass(new TransformNode("GameMode", scene), scene, {});
             if (gameModeController != null) {
-              TOOLKIT.SceneManager.AttachScriptComponent(gameModeController, babylonGameMode, false);
+              SceneManager.AttachScriptComponent(gameModeController, babylonGameMode, false);
             } else {
-              BABYLON.Tools.Warn("Failed to instantiate script class: " + babylonGameMode);
+              Tools.Warn("Failed to instantiate script class: " + babylonGameMode);
             }
         } else {
-            BABYLON.Tools.Warn("Failed to locate script class: " + babylonGameMode);
+            Tools.Warn("Failed to locate script class: " + babylonGameMode);
         }
       }
       // Validate blank scene file case (Allow blank scene file names and bail out early if detected. This allows the scene to be loaded without assets.
@@ -145,10 +145,10 @@ function BabylonSceneViewer(props: SceneViewerProps & React.CanvasHTMLAttributes
         overallPercent: 0,
         message: "Loading Scene ..."
       });
-      await BABYLON.ImportMeshAsync(babylonSceneFile, scene, {
+      await ImportMeshAsync(babylonSceneFile, scene, {
         meshNames: null,
         rootUrl: babylonRootPath,
-        onProgress: (event: BABYLON.ISceneLoaderProgressEvent) => {
+        onProgress: (event: ISceneLoaderProgressEvent) => {
           let percent: number | undefined;
           let message: string;
           if (event.lengthComputable && event.total > 0) {

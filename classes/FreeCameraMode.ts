@@ -1,7 +1,10 @@
-export class FreeCameraMode extends TOOLKIT.GameModeController {
-    private camera: BABYLON.FreeCamera | null = null;
+import { FreeCamera, Scene, TransformNode, Vector3 } from "@babylonjs/core";
+import { GameModeController, SceneManager } from "@babylonjs-toolkit/next/scenemanager";
 
-    constructor(transform: BABYLON.TransformNode, scene: BABYLON.Scene, properties: any = {}, alias: string = "FreeCameraMode") {
+export class FreeCameraMode extends GameModeController {
+    private camera: FreeCamera | null = null;
+
+    constructor(transform: TransformNode, scene: Scene, properties: any = {}, alias: string = "FreeCameraMode") {
         super(transform, scene, properties, alias);
     }
 
@@ -12,11 +15,11 @@ export class FreeCameraMode extends TOOLKIT.GameModeController {
 
     protected async createScene(data?: any): Promise<void> {
         // Create a free camera for the scene
-        this.camera = new BABYLON.FreeCamera("FreeCamera", new BABYLON.Vector3(0, 5, -10), this.scene);
+        this.camera = new FreeCamera("FreeCamera", new Vector3(0, 5, -10), this.scene);
         const canvas = this.scene.getEngine().getRenderingCanvas();
         if (canvas)this.camera.attachControl(canvas, true);
     }
 }
 
-TOOLKIT.SceneManager.RegisterClass("FreeCameraMode", FreeCameraMode);
+SceneManager.RegisterClass("FreeCameraMode", FreeCameraMode);
 

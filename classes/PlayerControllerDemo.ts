@@ -1,23 +1,30 @@
+import { AssetsManager, Scene, TransformNode } from "@babylonjs/core";
+import { GameModeController, InputController, SceneManager } from "@babylonjs-toolkit/next/scenemanager";
+import { ThirdPersonPlayerController } from "@babylonjs-toolkit/next/project";
+
 import GameManager from "../globals";
 
 // ThirdPersonPlayerController ships in the @babylonjs-toolkit/next package.
-export class PlayerControllerDemo extends TOOLKIT.GameModeController {
+export class PlayerControllerDemo extends GameModeController {
 
-    constructor(transform: BABYLON.TransformNode, scene: BABYLON.Scene, properties: any = {}, alias: string = "PlayerControllerDemo") {
+    constructor(transform: TransformNode, scene: Scene, properties: any = {}, alias: string = "PlayerControllerDemo") {
         super(transform, scene, properties, alias);
     }
 
     protected async createScene(data?: any): Promise<void> {
         // Load the player armature and create a third-person player controller
         GameManager.PostProgressStatus("Loading Player Armature ...");
+
+        InputController.EnableUserInput(this.scene.getEngine(), this.scene);
+
         const playerPrefab = "playerarmature.gltf";
         const assetRepoPath = GameManager.PlaygroundRepo;
-        const assetsManager = new BABYLON.AssetsManager(this.scene);
+        const assetsManager = new AssetsManager(this.scene);
         assetsManager.addMeshTask("playerarmature", null, assetRepoPath, playerPrefab);
-        await TOOLKIT.SceneManager.LoadRuntimeAssets(assetsManager, [playerPrefab], ()=> {
-            const player = this.scene.getNodeByName("PlayerArmature") as BABYLON.TransformNode;
+        await SceneManager.LoadRuntimeAssets(assetsManager, [playerPrefab], ()=> {
+            const player = this.scene.getNodeByName("PlayerArmature") as TransformNode;
             if (player != null) {
-                const controller = new PROJECT.ThirdPersonPlayerController(player, this.scene, { arrowKeyRotation: true, smoothMotionSpeed:true, smoothChangeRate: 25.0 });
+                const controller = new ThirdPersonPlayerController(player, this.scene, { arrowKeyRotation: true, smoothMotionSpeed:true, smoothChangeRate: 25.0 });
                 controller.enableInput = true;
                 controller.attachCamera = true;
                 controller.moveSpeed = 5.335;
@@ -28,4 +35,4 @@ export class PlayerControllerDemo extends TOOLKIT.GameModeController {
     }
 }
 
-TOOLKIT.SceneManager.RegisterClass("PlayerControllerDemo", PlayerControllerDemo);
+SceneManager.RegisterClass("PlayerControllerDemo", PlayerControllerDemo);

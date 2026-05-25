@@ -9,9 +9,9 @@ export {};
 
 declare global {
   // Babylon Toolkit UMD globals
-  const BABYLON: any;
-  const TOOLKIT: any;
-  const PROJECT: any;
+  // const BABYLON: any;
+  // const TOOLKIT: any;
+  // const PROJECT: any;
 
   // Havok physics — loaded dynamically via BABYLON.Tools.LoadScriptAsync
   // and exposed as a global factory function on `globalThis`.
@@ -20,13 +20,12 @@ declare global {
   // Runtime caches stashed on globalThis so async script loads happen once
   // across hot reloads, navigation and React StrictMode double-invokes.
   interface globalThis {
-    BABYLON: any;
-    TOOLKIT: any;
-    PROJECT: any;
+    // BABYLON: any;
+    // TOOLKIT: any;
+    // PROJECT: any;
     HK: any;
     HKP: any;
     HavokPhysics: () => Promise<any>;
-    HAVOKPHYSCIS_JS: any;   // note: matches existing (mis)spelling in globals.ts
     HAVOKPHYSICS_JS: any;
     SCRIPTBUNDLE_JS: any;
   }
