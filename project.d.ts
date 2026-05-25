@@ -1,6 +1,5 @@
-// Ambient global declarations for the Babylon Toolkit UMD runtime.
-// These globals are populated at runtime by the UMD side-effect imports in
-// `globals.ts` (babylonjs, babylonjs-toolkit) and by dynamic script loads
+// Ambient global declarations for the Babylon Toolkit ESM runtime.
+// These globals are populated at runtime by dynamic script loads
 // (Havok physics, project script bundle). Declaring them here keeps the
 // project compilable under `strict: true` without scattered `@ts-ignore`s
 // or `(globalThis as any)` casts at every call site.
