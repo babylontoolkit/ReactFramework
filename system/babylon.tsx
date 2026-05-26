@@ -242,7 +242,7 @@ function BabylonSceneViewer(props: SceneViewerProps & React.CanvasHTMLAttributes
   return (
     <div className={fullPage ? "page-viewer" : "div-viewer"}>
       <SplashScreen />
-      <BaseSceneViewer webgpu={true} antialias={true} adaptToDeviceRatio={true} onCreateScene={createScene} className="canvas" />
+      <BaseSceneViewer webgpu={true} antialias={true} legacyAudio={true} adaptToDeviceRatio={true} onCreateScene={createScene} className="canvas" />
       {props.enableCustomOverlay && <CustomOverlay />}
     </div>
   );

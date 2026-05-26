@@ -10,6 +10,7 @@ const DEFAULT_ENGINE_OPTIONS = {};
 export declare type BabylonjsProps = {
   webgpu?: boolean;
   antialias?: boolean;
+  legacyAudio?: boolean;
   engineOptions?: any;
   adaptToDeviceRatio?: boolean;
   renderChildrenWhenReady?: boolean;
@@ -24,7 +25,7 @@ export declare type BabylonjsProps = {
 };
 
 function BaseSceneViewer(props: BabylonjsProps & React.CanvasHTMLAttributes<HTMLCanvasElement>) {
-  const { webgpu, antialias, engineOptions = DEFAULT_ENGINE_OPTIONS, adaptToDeviceRatio, sceneOptions, onRender, onCreateScene, ...rest } = props;
+  const { webgpu, antialias, legacyAudio, engineOptions = DEFAULT_ENGINE_OPTIONS, adaptToDeviceRatio, sceneOptions, onRender, onCreateScene, ...rest } = props;
   const reactCanvas = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -39,11 +40,14 @@ function BaseSceneViewer(props: BabylonjsProps & React.CanvasHTMLAttributes<HTML
           const canvas = reactCanvas.current;
           if (!canvas) return;
 
+          let engineOptionsToUse = engineOptions != null ? { ...engineOptions } : { ...DEFAULT_ENGINE_OPTIONS };
+          if (legacyAudio === true) engineOptionsToUse.audioEngine = legacyAudio;
+
           try {
               if (typeof navigator !== "undefined" && (navigator as any).gpu && webgpu) {
                   try {
                       const webgpuEngine = new WebGPUEngine(canvas, {
-                          ...engineOptions,
+                          ...engineOptionsToUse,
                           antialias,
                           adaptToDeviceRatio,
                           setMaximumLimits: true,
@@ -67,7 +71,7 @@ function BaseSceneViewer(props: BabylonjsProps & React.CanvasHTMLAttributes<HTML
               }
 
               if (!engine) {
-                  const fallbackEngine = new Engine(canvas, antialias, engineOptions, adaptToDeviceRatio);
+                  const fallbackEngine = new Engine(canvas, antialias, engineOptionsToUse, adaptToDeviceRatio);
 
                   if (disposeRequested) {
                       try { fallbackEngine.dispose(); } catch (e) { console.warn(e); }
@@ -172,7 +176,7 @@ function BaseSceneViewer(props: BabylonjsProps & React.CanvasHTMLAttributes<HTML
           scene = null;
           resizeListener = null;
       };
-  }, [webgpu, antialias, engineOptions, adaptToDeviceRatio, sceneOptions, onRender, onCreateScene]);
+  }, [webgpu, antialias, legacyAudio, engineOptions, adaptToDeviceRatio, sceneOptions, onRender, onCreateScene]);
 
   return <canvas ref={reactCanvas} tabIndex={0} {...rest} />;
 }
