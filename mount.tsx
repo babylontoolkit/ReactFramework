@@ -24,31 +24,23 @@ import { lazy, Suspense, type ReactNode } from "react";
 import { DefaultBabylonPreloader } from "./custom/loading";
 
 const InnerScene = lazy(async () => {
-  const [{ default: BabylonSceneViewer }, { default: ApplicationRoute }] =
-    await Promise.all([
-      import("./system/babylon"),
-      import("./system/routing"),
-    ]);
+  const { default: BabylonSceneViewer } = await import("./system/babylon");
   return {
     default: ({
-      allowDevMode = true,
       fullPage = true,
       allowQueryParams = true,
       enableCustomOverlay = false,
     }: SceneProps) => (
-      <ApplicationRoute allowDevMode={allowDevMode}>
-        <BabylonSceneViewer
-          fullPage={fullPage}
-          allowQueryParams={allowQueryParams}
-          enableCustomOverlay={enableCustomOverlay}
-        />
-      </ApplicationRoute>
+      <BabylonSceneViewer
+        fullPage={fullPage}
+        allowQueryParams={allowQueryParams}
+        enableCustomOverlay={enableCustomOverlay}
+      />
     ),
   };
 });
 
 export type SceneProps = {
-  allowDevMode?: boolean;
   fullPage?: boolean;
   allowQueryParams?: boolean;
   enableCustomOverlay?: boolean;
