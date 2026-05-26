@@ -30,8 +30,6 @@ const G = globalThis as unknown as {
 };
 
 class GameManager {
-    /** No-op static initializer to ensure global variables are registered. */
-    public static Awaken(): void {}
     /** Initialize the game runtime environment */
     public static async InitializeRuntime(scene:Scene, scriptBundle:string, enablePhysics:boolean = true, showLoadingScreen:boolean = true, hideEngineLoadingUI:boolean = false): Promise<void> {
         if (scene.isDisposed) return; // Note: Strict mode safety
@@ -97,10 +95,7 @@ class GameManager {
         //////////////////////////////////////////////////////////////////////////////////////////////////////              
         if (GameManager.ReactNavigationFunction != null) {
             const navOptions: UnifiedNavigationOptions = {
-                state: {
-                    ...(state ?? {}),
-                    fromApp: true,
-                },
+                state: state ?? {},
             };
             GameManager.ReactNavigationFunction(route, navOptions);
         } else {
@@ -191,9 +186,6 @@ class GameManager {
 
     /** Indicates if the game is running in development mode */
     public static get IsDevelopmentMode(): boolean { return process.env.NODE_ENV === "development"; }
-
-    /** URL of the Havok physics engine script */
-    public static HavokEngineUrl: string = "scripts/havok.js";
 }
 export enum StorageType { Local = 0, Session = 1 }
 

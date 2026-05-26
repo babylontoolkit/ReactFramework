@@ -23,7 +23,6 @@ export interface INavigationState {
 }
 
 export type NavigationState = INavigationState & {
-    fromApp?: boolean;
     [key: string]: any;
 };
 
@@ -55,7 +54,7 @@ const NavigationContext = createContext<UnifiedNavigation | null>(null);
 // =================================================================
 // sessionStorage key used to persist navigation state across
 // page reloads in iframe-based environments (e.g. Lovable preview).
-// Written by the adapter on every fromApp navigation; consumed and
+// Written by the adapter on every navigation; consumed and
 // cleared by the Babylon viewer after it reads gameMode/sceneUrl.
 // Never put in the URL — users cannot craft a shareable link.
 // =================================================================
