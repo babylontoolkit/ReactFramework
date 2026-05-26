@@ -50,6 +50,34 @@ export type UnifiedNavigation = {
 
 const NavigationContext = createContext<UnifiedNavigation | null>(null);
 
+// =================================================================
+// Navigation State Bridge
+// =================================================================
+// sessionStorage key used to persist navigation state across
+// page reloads in iframe-based environments (e.g. Lovable preview).
+// Written by the adapter on every fromApp navigation; consumed and
+// cleared by the Babylon viewer after it reads gameMode/sceneUrl.
+// Never put in the URL — users cannot craft a shareable link.
+// =================================================================
+export const NAV_STATE_STORE_KEY = "__bt_nav_state";
+
+/** Read persisted nav state from sessionStorage (returns null if absent/unparseable). */
+export function readNavStateStore(): NavigationState | null {
+  if (typeof sessionStorage === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(NAV_STATE_STORE_KEY);
+    return raw ? (JSON.parse(raw) as NavigationState) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Consume and clear persisted nav state (call after reading in the viewer). */
+export function clearNavStateStore(): void {
+  if (typeof sessionStorage === "undefined") return;
+  try { sessionStorage.removeItem(NAV_STATE_STORE_KEY); } catch { /* ignore */ }
+}
+
 /**
  * Host apps wrap their tree with <NavigationProvider value={...}>.
  * The value is supplied by a tiny per-host adapter that bridges the

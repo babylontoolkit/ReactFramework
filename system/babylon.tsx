@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import { useUnifiedNavigation } from "./platform";
+import { useUnifiedNavigation, readNavStateStore, clearNavStateStore } from "./platform";
 import BaseSceneViewer from "./viewer";
 import CustomOverlay from "../custom/overlay";
 import SplashScreen from "../custom/splash";
@@ -55,8 +55,13 @@ function BabylonSceneViewer(props: SceneViewerProps & React.CanvasHTMLAttributes
     let gameModeAuxiliaryData:any | undefined = auxiliaryData;
     let gameModeReadyInvoked: boolean = false;
     let gameProjectScriptBundle: string = scriptUrl || null;
+    // Resolve nav state once: location.state is the normal SPA path; sessionStorage
+    // is the iframe-reload fallback. Data is never in the URL.
+    const _resolvedNavState = (location?.state?.gameMode || location?.state?.sceneUrl || location?.state?.auxiliaryData || location?.state?.scriptUrl)
+        ? location.state
+        : readNavStateStore();
     if (allowQueryParams === true) {
-        gameProjectScriptBundle = location?.state?.scriptUrl || gameProjectScriptBundle;
+        gameProjectScriptBundle = _resolvedNavState?.scriptUrl || gameProjectScriptBundle;
     }
     const invokeGameModeReady = async (): Promise<void> => {
       if (gameModeReadyInvoked || disposed || scene.isDisposed) return;
@@ -83,15 +88,18 @@ function BabylonSceneViewer(props: SceneViewerProps & React.CanvasHTMLAttributes
       if (allowQueryParams === true) {
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Unified Navigation Adapter Support (React Router, Next.js, Remix, etc.)
+        // Uses _resolvedNavState which prefers location.state and falls back to
+        // sessionStorage so state survives iframe reloads (e.g. Lovable preview).
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
-        babylonGameMode = location?.state?.gameMode || babylonGameMode;
-        let locSceneUrl = location?.state?.sceneUrl || null;
+        clearNavStateStore(); // Consume once — prevents stale reads on future navigations
+        babylonGameMode = _resolvedNavState?.gameMode || babylonGameMode;
+        let locSceneUrl = _resolvedNavState?.sceneUrl || null;
         if (locSceneUrl != null && locSceneUrl !== "") {
           rootPath = locSceneUrl.substring(0, locSceneUrl.lastIndexOf("/") + 1);
           sceneFile = locSceneUrl.substring(locSceneUrl.lastIndexOf("/") + 1);
         }
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
-        gameModeAuxiliaryData = location?.state?.auxiliaryData || gameModeAuxiliaryData;
+        gameModeAuxiliaryData = _resolvedNavState?.auxiliaryData || gameModeAuxiliaryData;
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
         if (isDevelopment === true) { // Note: Unity Editor Development Preview Query Param Support
           // babylonGameMode = defaultPageUrl.searchParams.get("mode") || babylonGameMode;

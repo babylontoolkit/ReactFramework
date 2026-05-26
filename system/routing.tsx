@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useUnifiedNavigation } from "./platform";
+import { readNavStateStore } from "./platform";
 
 interface ApplicationRouteProps {
   children: React.ReactNode;
@@ -23,11 +24,11 @@ interface ApplicationRouteProps {
  */
 export default function ApplicationRoute({ children, redirectTo = '/', allowDevMode = false }: ApplicationRouteProps) {
   const { navigate, location } = useUnifiedNavigation();
-  const allowByState: boolean = Boolean(location.state?.fromApp);
-  // const isDevelopment: boolean = process.env.NODE_ENV === "development";
-  // const isRouteAllowed: boolean = allowByState || (allowDevMode && isDevelopment);
-  const hasQueryHints = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("mode");
-  const isRouteAllowed = allowByState || allowDevMode || hasQueryHints;  
+  // Primary check: location.state set by navigate() — the normal SPA path.
+  // Fallback check: sessionStorage bridge — survives an iframe reload where the
+  // router drops state (e.g. Lovable preview). Data is never exposed in the URL.
+  const allowByState: boolean = Boolean(location.state?.fromApp) || Boolean(readNavStateStore()?.fromApp);
+  const isRouteAllowed = allowByState || allowDevMode;
 
   useEffect(() => {
     // If no state was passed (direct browser access), redirect
