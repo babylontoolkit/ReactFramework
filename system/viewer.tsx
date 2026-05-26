@@ -35,6 +35,30 @@ function BaseSceneViewer(props: BabylonjsProps & React.CanvasHTMLAttributes<HTML
       let resizeListener: (() => void) | null = null;
       let readyObserver: Nullable<Observer<Scene>> = null;
 
+// TODO: Handle Audio Engine Unlock in a more robust way that doesn't rely on global state or event listeners, and that works with both legacy and modern audio engines. This is a temporary workaround to ensure audio can be unlocked on user interaction, which is required by many browsers for audio playback to work properly. We should consider implementing a more integrated solution within the Babylon.js engine initialization process in the future.      
+// window.prepareBabylonEngineProperties = async () => {
+//     // ************************************************************************ //
+//     window.audioEngineClicked = false;    
+//     window.doAudioEngineClick = async () => {
+//         if (window.audioEngineClicked === false) {
+//             window.audioEngineClicked = true;
+//             document.removeEventListener("click", window.doAudioEngineClick);
+//             if (legacyAudio === true) {
+//                 if (TOOLKIT.AudioSource.UnlockLegacyAudio) {
+//                     TOOLKIT.AudioSource.UnlockLegacyAudio();
+//                     // BABYLON.Tools.Warn("Unlocked legacy audio engine");
+//                 }
+//             } else {
+//                 if (TOOLKIT.AudioSource.UnlockAudioEngine) {
+//                     await TOOLKIT.AudioSource.UnlockAudioEngine();
+//                     // BABYLON.Tools.Warn("Unlocked audio engine context");
+//                 }
+//             }   
+//         }
+//     }
+//     document.addEventListener("click", window.doAudioEngineClick);
+// };
+
       // Initialize the engine and scene (Note: Strict mode safety)
       const initializeEngineAndScene = async (): Promise<void> => {
           const canvas = reactCanvas.current;

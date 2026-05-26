@@ -1,10 +1,8 @@
 import { AssetsManager, Scene, TransformNode } from "@babylonjs/core";
 import { GameModeController, InputController, SceneManager } from "@babylonjs-toolkit/next/scenemanager";
 import { ThirdPersonPlayerController } from "@babylonjs-toolkit/next/project";
-
 import GameManager from "../globals";
 
-// ThirdPersonPlayerController ships in the @babylonjs-toolkit/next package.
 export class PlayerControllerDemo extends GameModeController {
 
     constructor(transform: TransformNode, scene: Scene, properties: any = {}, alias: string = "PlayerControllerDemo") {
@@ -15,8 +13,10 @@ export class PlayerControllerDemo extends GameModeController {
         // Load the player armature and create a third-person player controller
         GameManager.PostProgressStatus("Loading Player Armature ...");
 
+        // Enable user input for the scene, if not already enabled by the scene
         InputController.EnableUserInput(this.scene.getEngine(), this.scene);
 
+        // Load the player armature and configure third-person player controller
         const playerPrefab = "playerarmature.gltf";
         const assetRepoPath = GameManager.PlaygroundRepo;
         const assetsManager = new AssetsManager(this.scene);
