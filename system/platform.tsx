@@ -27,13 +27,12 @@ export type NavigationState = INavigationState & {
 };
 
 export type UnifiedNavigationOptions = {
-    state?: NavigationState;
     replace?: boolean;
 };
 
 export type UnifiedNavigateFunction = (
     path: string,
-    options?: UnifiedNavigationOptions
+    state?: NavigationState
 ) => void;
 
 export type LocationState = {

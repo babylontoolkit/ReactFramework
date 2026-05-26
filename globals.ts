@@ -17,7 +17,7 @@ import "@babylonjs/addons";
 import "@babylonjs/serializers";
 // =============================================================================================
 
-import { INavigationState, UnifiedNavigateFunction, UnifiedNavigationOptions } from "./system/platform";
+import { INavigationState, UnifiedNavigateFunction } from "./system/platform";
 
 // Single typed alias for the runtime globals declared in project.d.ts.
 // Avoids sprinkling `(globalThis as any)` casts throughout the file.
@@ -94,10 +94,7 @@ class GameManager {
         // Requires Unified Navigation Adapter to be setup in host project.
         //////////////////////////////////////////////////////////////////////////////////////////////////////              
         if (GameManager.ReactNavigationFunction != null) {
-            const navOptions: UnifiedNavigationOptions = {
-                state: state ?? {},
-            };
-            GameManager.ReactNavigationFunction(route, navOptions);
+            GameManager.ReactNavigationFunction(route, state ?? undefined);
         } else {
             console.warn("React navigation hook is not set on the game manager.");
         }
