@@ -1,6 +1,6 @@
 "use client";
 
-import { useUnifiedNavigation, UnifiedNavigateFunction } from "../system/platform";
+import { useUnifiedNavigation } from "../system/platform";
 import "./overlay.css";
 
 function CustomOverlay() {

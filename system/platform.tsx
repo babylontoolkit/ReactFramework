@@ -8,7 +8,7 @@
  *
  * The babylon/ folder is router-agnostic. Host apps provide an
  * adapter that wraps their router's hooks and supplies the value
- * to <NavigationProvider>. Works with react-router-dom,
+ * to <NavigationProvider>. Works with react router dom,
  * @tanstack/react-router, next/navigation, etc.
  * =================================================================
  */
@@ -81,7 +81,7 @@ export function clearNavStateStore(): void {
 /**
  * Host apps wrap their tree with <NavigationProvider value={...}>.
  * The value is supplied by a tiny per-host adapter that bridges the
- * host router (react-router-dom, @tanstack/react-router, next, ...)
+ * host router (react router dom, @tanstack/react-router, next, ...)
  * to the UnifiedNavigation shape.
  */
 export function NavigationProvider({ value, children }: { value: UnifiedNavigation; children?: ReactNode }) {
