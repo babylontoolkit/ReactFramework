@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import { useUnifiedNavigation, readNavStateStore, clearNavStateStore } from "./platform";
+import { useUnifiedNavigation, readNavStateStore } from "./platform";
 import BaseSceneViewer from "./viewer";
 import CustomOverlay from "../custom/overlay";
 import SplashScreen from "../custom/splash";
@@ -91,7 +91,6 @@ function BabylonSceneViewer(props: SceneViewerProps & React.CanvasHTMLAttributes
         // Uses _resolvedNavState which prefers location.state and falls back to
         // sessionStorage so state survives iframe reloads (e.g. Lovable preview).
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
-        clearNavStateStore(); // Consume once — prevents stale reads on future navigations
         babylonGameMode = _resolvedNavState?.gameMode || babylonGameMode;
         let locSceneUrl = _resolvedNavState?.sceneUrl || null;
         if (locSceneUrl != null && locSceneUrl !== "") {
