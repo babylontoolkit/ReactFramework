@@ -19,6 +19,7 @@ export interface INavigationState {
     gameMode?: string;
     sceneUrl?: string;
     scriptUrl?: string;
+    reloadPage?: boolean;
     auxiliaryData?: any;
 }
 
