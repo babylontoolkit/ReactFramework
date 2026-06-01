@@ -49,7 +49,7 @@ class GameManager {
             if (G.HK == null || G.HKP == null)
             {
                 // @ts-ignore - This initializes fresh physics for this scene
-                G.HK = await HavokPhysics();
+                G.HK = await HavokPhysics({ locateFile: (file: string) => { if (file.endsWith(".wasm")) { return "scripts/havok.wasm"; } return file; }, });
                 G.HKP = new HavokPlugin(false);
             }
             if (!scene.isDisposed && G.HK != null && G.HKP != null)
