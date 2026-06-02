@@ -1,9 +1,9 @@
 import { AssetsManager, Scene, TransformNode } from "@babylonjs/core";
-import { GameModeController, InputController, SceneManager } from "@babylonjs-toolkit/next/scenemanager";
+import { SceneController, InputController, SceneManager } from "@babylonjs-toolkit/next/scenemanager";
 import { StandardCarController, VehicleInputController, VehicleCameraManager } from "@babylonjs-toolkit/next/project";
 import GameManager from "../globals";
 
-export class VehicleControllerDemo extends GameModeController {
+export class VehicleControllerDemo extends SceneController {
 
     constructor(transform: TransformNode, scene: Scene, properties: any = {}, alias: string = "VehicleControllerDemo") {
         super(transform, scene, properties, alias);

@@ -1,7 +1,7 @@
 import { FreeCamera, Scene, TransformNode, Vector3 } from "@babylonjs/core";
-import { GameModeController, SceneManager } from "@babylonjs-toolkit/next/scenemanager";
+import { SceneController, SceneManager } from "@babylonjs-toolkit/next/scenemanager";
 
-export class FreeCameraMode extends GameModeController {
+export class FreeCameraMode extends SceneController {
     private camera: FreeCamera | null = null;
 
     constructor(transform: TransformNode, scene: Scene, properties: any = {}, alias: string = "FreeCameraMode") {

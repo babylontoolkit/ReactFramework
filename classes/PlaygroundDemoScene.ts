@@ -1,7 +1,7 @@
 import { FreeCamera, HemisphericLight, MeshBuilder, Scene, TransformNode, Vector3 } from "@babylonjs/core";
-import { GameModeController, SceneManager } from "@babylonjs-toolkit/next/scenemanager";
+import { SceneController, SceneManager } from "@babylonjs-toolkit/next/scenemanager";
 
-export class PlaygroundDemoScene extends GameModeController {
+export class PlaygroundDemoScene extends SceneController {
 
     constructor(transform: TransformNode, scene: Scene, properties: any = {}, alias: string = "PlaygroundDemoScene") {
         super(transform, scene, properties, alias);

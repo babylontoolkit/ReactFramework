@@ -51,7 +51,7 @@ function BabylonSceneViewer(props: SceneViewerProps & React.CanvasHTMLAttributes
     let disposeObserver = scene.onDisposeObservable.add(() => { disposed = true; });
     let rootPath: string | null = sceneUrl != null && sceneUrl !== "" ? sceneUrl.substring(0, sceneUrl.lastIndexOf("/") + 1) : null;
     let sceneFile: string | null = sceneUrl != null && sceneUrl !== "" ? sceneUrl.substring(sceneUrl.lastIndexOf("/") + 1) : null;
-    let gameModeController: ScriptComponent = null;
+    let sceneController: ScriptComponent = null;
     let gameModeAuxiliaryData:any | undefined = auxiliaryData;
     let gameModeReadyInvoked: boolean = false;
     let gameProjectScriptBundle: string = scriptUrl || null;
@@ -65,10 +65,10 @@ function BabylonSceneViewer(props: SceneViewerProps & React.CanvasHTMLAttributes
     }
     const invokeGameModeReady = async (): Promise<void> => {
       if (gameModeReadyInvoked || disposed || scene.isDisposed) return;
-      if (gameModeController != null) {
-        if (gameModeController["preCreateScene"] != null && typeof gameModeController["preCreateScene"] === "function") {
+      if (sceneController != null) {
+        if (sceneController["preCreateScene"] != null && typeof sceneController["preCreateScene"] === "function") {
           gameModeReadyInvoked = true;
-          await gameModeController["preCreateScene"](gameModeAuxiliaryData);
+          await sceneController["preCreateScene"](gameModeAuxiliaryData);
         }
       }
     };
@@ -123,9 +123,9 @@ function BabylonSceneViewer(props: SceneViewerProps & React.CanvasHTMLAttributes
       if (babylonGameMode != null && babylonGameMode !== "") {
         const ScriptComponentClass = Utilities.InstantiateClass(babylonGameMode);
         if (ScriptComponentClass != null) {
-            gameModeController = new ScriptComponentClass(new TransformNode("GameMode", scene), scene, {});
-            if (gameModeController != null) {
-              SceneManager.AttachScriptComponent(gameModeController, babylonGameMode, false);
+            sceneController = new ScriptComponentClass(new TransformNode("GameMode", scene), scene, {});
+            if (sceneController != null) {
+              SceneManager.AttachScriptComponent(sceneController, babylonGameMode, false);
             } else {
               Tools.Warn("Failed to instantiate script class: " + babylonGameMode);
             }
