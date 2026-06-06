@@ -21,19 +21,35 @@ export class VehicleControllerDemo extends SceneController {
         const assetRepoPath = GameManager.PlaygroundRepo;
         const assetsManager = new AssetsManager(this.scene);
         assetsManager.addMeshTask("riggedmustang", null, assetRepoPath, mustangPrefab);
-        await SceneManager.LoadRuntimeAssets(assetsManager, [mustangPrefab], ()=> {
+        await SceneManager.LoadRuntimeAssets(assetsManager, [mustangPrefab], () => {
             const mustang = this.scene.getNodeByName("RiggedMustang") as TransformNode;
             if (mustang != null) {
-                const standardCarController:StandardCarController = SceneManager.FindScriptComponent(mustang, "StandardCarController");
+                const startPosition = this.scene.getNodeByName("StartPosition 1") as TransformNode;
+                if (startPosition != null) {
+                    const startWorld = startPosition.getAbsolutePosition();
+                    mustang.position.copyFrom(startWorld);
+                    if (startPosition.rotationQuaternion != null) {
+                        if (mustang.rotationQuaternion == null) {
+                            mustang.rotationQuaternion = startPosition.rotationQuaternion.clone();
+                        } else {
+                            mustang.rotationQuaternion.copyFrom(startPosition.rotationQuaternion);
+                        }
+                    } else {
+                        mustang.rotation.copyFrom(startPosition.rotation);
+                    }
+                } else {
+                    console.warn("VehicleControllerDemo: 'StartPosition 1' transform not found in scene.");
+                }
+                const standardCarController: StandardCarController = SceneManager.FindScriptComponent(mustang, "StandardCarController");
                 if (standardCarController != null) {
                     standardCarController.topEngineSpeed = 200;
                     standardCarController.powerCoefficient = 2.0;
                 }
-                const vehicleInputController:VehicleInputController = SceneManager.FindScriptComponent(mustang, "VehicleInputController");
+                const vehicleInputController: VehicleInputController = SceneManager.FindScriptComponent(mustang, "VehicleInputController");
                 if (vehicleInputController != null) {
                     vehicleInputController.enableInput = true;
                 }
-                const vehicleCameraManager:VehicleCameraManager = SceneManager.FindScriptComponent(mustang, "VehicleCameraManager");
+                const vehicleCameraManager: VehicleCameraManager = SceneManager.FindScriptComponent(mustang, "VehicleCameraManager");
                 if (vehicleCameraManager != null) {
                     vehicleCameraManager.enableCamera = true;
                     vehicleCameraManager.autoAttachCamera = true;
