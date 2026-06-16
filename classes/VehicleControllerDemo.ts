@@ -30,8 +30,7 @@ export class VehicleControllerDemo extends SceneController {
                     mustang.position.copyFrom(startWorld);
                     const startRotation = startPosition.absoluteRotationQuaternion;
                     if (startRotation != null) {
-                        const rotationAngle = startRotation.toEulerAngles().y;
-                        mustang.rotationQuaternion = Quaternion.FromEulerAngles(0, rotationAngle, 0);
+                        mustang.rotationQuaternion = startRotation.clone();
                     } else {
                         console.warn("VehicleControllerDemo: 'StartPosition 20' transform does not have a rotationQuaternion.");
                     }
