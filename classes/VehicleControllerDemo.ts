@@ -17,7 +17,7 @@ export class VehicleControllerDemo extends SceneController {
         InputController.EnableUserInput(this.scene.getEngine(), this.scene);
 
         // Load the rigged mustang and configure vehicle controller
-        const mustangPrefab = "riggedmustang.gltf";
+        const mustangPrefab = "riggedmustang.gz.gltf";
         const assetRepoPath = GameManager.PlaygroundRepo;
         const assetsManager = new AssetsManager(this.scene);
         assetsManager.addMeshTask("riggedmustang", null, assetRepoPath, mustangPrefab);

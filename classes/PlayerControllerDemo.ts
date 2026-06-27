@@ -17,7 +17,7 @@ export class PlayerControllerDemo extends SceneController {
         InputController.EnableUserInput(this.scene.getEngine(), this.scene);
 
         // Load the player armature and configure third-person player controller
-        const playerPrefab = "playerarmature.gltf";
+        const playerPrefab = "playerarmature.gz.gltf";
         const assetRepoPath = GameManager.PlaygroundRepo;
         const assetsManager = new AssetsManager(this.scene);
         assetsManager.addMeshTask("playerarmature", null, assetRepoPath, playerPrefab);

@@ -85,7 +85,7 @@ class GameManager {
      * @example
     * GameManager.NavigateTo("/play", {
     *     gameMode: "PlayerControllerDemo",
-    *     sceneUrl: GameManager.PlaygroundRepo + "samplescene.gltf",
+    *     sceneUrl: GameManager.PlaygroundRepo + "samplescene.gz.gltf",
     * });
      */
     public static NavigateTo(route: string, state: INavigationState | null = null): void {
