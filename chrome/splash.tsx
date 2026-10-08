@@ -46,9 +46,14 @@ function SplashScreen() {
   const [detailsText, setDetailsText] = useState<string>("");
   const [progress, setProgress] = useState<number | null>(null);
   useEffect(() => {
-    // 1. the scene file download (glTF + bin), posted by the scene viewer and GameManager.PostProgressStatus
+    // the toolkit's own scene build stages (BUILDING SCENE NN%, SETTING UP SCENE) take over the status line and bar once the
+    // scene file has downloaded, instead of the download percent sitting at 100% (runtime 9.29+)
+    (SceneManager as any).HostDefersSceneStatus = true;
+    let loaderState: number = -1;
+    // 1. the scene file download (glTF + bin), posted by the scene viewer and GameManager.PostProgressStatus - until the toolkit
+    // posts its own stages (a loader state from 1 on): later download events would overwrite them
     const onLoadProgress = (data: AssetProgressMessage) => {
-      if (data == null) return;
+      if (data == null || loaderState >= 1) return;
       if (data.message != null) setStatusText(data.message);
       const percent = data.overallPercent ?? data.percent;
       if (typeof percent === "number" && isFinite(percent)) setProgress(Math.max(0, Math.min(1, percent / 100)));
@@ -57,7 +62,6 @@ function SplashScreen() {
     // 2. the toolkit asset preloader that runs after the download: terrains, skins, probes, audio (runtime 9.29+)
     // terrain stages and asset counts report their own fractions while the preloader runs: the bar only moves forward
     // within one loading state and starts over when the state changes
-    let loaderState: number = -1;
     const loaderStatus: any = (SceneManager as any).OnLoaderStatusObservable;
     const observer: any = (loaderStatus != null) ? loaderStatus.add((data: LoaderStatus) => {
       if (data == null) return;
