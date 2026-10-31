@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { AbstractEngine, DracoDecoder, Engine, FreeCamera, Nullable, Observer, Scene, Vector3, WebGPUEngine } from "@babylonjs/core";
+import { KhronosTextureContainer2 } from "@babylonjs/core/Misc/khronosTextureContainer2";
 import { SceneManager } from "@babylonjs-toolkit/next/scenemanager";
 import GameManager from "../globals";
 
@@ -73,6 +74,21 @@ function BaseSceneViewer(props: BabylonjsProps & React.CanvasHTMLAttributes<HTML
            * fetches draco.wasm itself and hands the bytes to its decode workers, which load draco.js by URL.
            */
           DracoDecoder.DefaultConfiguration = { wasmUrl: "scripts/draco.js", wasmBinaryUrl: "scripts/draco.wasm" };
+
+          /*
+           * KTX2 texture transcoders, self-hosted in public/scripts (the same files and settings as the exporter's
+           * engine.html), so KTX2 textures never load their decoders from the Babylon CDN and work offline.
+           */
+          KhronosTextureContainer2.URLConfig.jsDecoderModule = "scripts/babylon.ktx2decoder.js";
+          KhronosTextureContainer2.URLConfig.jsMSCTranscoder = "scripts/msc_basis_transcoder.js";
+          KhronosTextureContainer2.URLConfig.wasmMSCTranscoder = "scripts/msc_basis_transcoder.wasm";
+          KhronosTextureContainer2.URLConfig.wasmZSTDDecoder = "scripts/zstddec.wasm";
+          KhronosTextureContainer2.URLConfig.wasmUASTCToASTC = "scripts/uastc_astc.wasm";
+          KhronosTextureContainer2.URLConfig.wasmUASTCToBC7 = "scripts/uastc_bc7.wasm";
+          KhronosTextureContainer2.URLConfig.wasmUASTCToRGBA_UNORM = "scripts/uastc_rgba8_unorm_v2.wasm";
+          KhronosTextureContainer2.URLConfig.wasmUASTCToRGBA_SRGB = "scripts/uastc_rgba8_srgb_v2.wasm";
+          KhronosTextureContainer2.URLConfig.wasmUASTCToR8_UNORM = "scripts/uastc_r8_unorm.wasm";
+          KhronosTextureContainer2.URLConfig.wasmUASTCToRG8_UNORM = "scripts/uastc_rg8_unorm.wasm";
 
           try {
               if (typeof navigator !== "undefined" && (navigator as any).gpu && webgpu) {
