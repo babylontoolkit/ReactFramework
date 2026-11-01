@@ -19,6 +19,11 @@
   margin: 0;
 }
 
+/* The sizes line ("Game data · On this device · Free space"): its dots stand between the sizes, so they sit closer. */
+.content-install-panel__summary {
+  gap: 4px 10px;
+}
+
 .content-install-panel__bar {
   position: relative;
   height: 8px;
@@ -43,15 +48,9 @@
   gap: 8px;
 }
 
-.content-install-panel__groups {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
+.content-install-panel__title,
+.content-install-panel__text,
+.content-install-panel__partial,
 .content-install-panel__error,
 .content-install-offer__message,
 .content-toast__message {
