@@ -1,14 +1,51 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from "react";
 import type { ContentInstaller, IContentInstallerState, IContentInstallProgress } from "@babylonjs-toolkit/next";
 import type { Observer } from "@babylonjs/core/Misc/observable";
-import { createContentInstallerOptions, type IContentInstallerHostOptions } from "./contentInstallerConfig";
-import { ContentInstallerContext, type IContentInstallerActions, type IContentInstallerContextValue } from "./useContentInstaller";
+import type { IContentGraphicsStateFields } from "./contentGraphics";
+import {
+    createContentInstallerOptions,
+    DEFAULT_PRIMING_ENGINE_OPTIONS,
+    type IContentInstallerHostOptions,
+    type IContentPrimingEngineOptions,
+    type IContentScenePreparer,
+} from "./contentInstallerConfig";
+import {
+    ContentInstallerContext,
+    type IContentInstallActionOptions,
+    type IContentInstallerActions,
+    type IContentInstallerContextValue,
+} from "./useContentInstaller";
 
 /** The toolkit's installer class (a type only: the module itself is loaded with `import()`). */
 export type ContentInstallerClass = typeof ContentInstaller;
 
 /** A progress subscriber. */
 type ProgressListener = (progress: IContentInstallProgress) => void;
+
+/**
+ * A graphics preparer (`TOOLKIT.IContentGraphicsPreparer`, faster-scene-loading T4). The provider only hands it from the
+ * toolkit's scene module to the installer, so it stays opaque here.
+ */
+type GraphicsPreparer = object;
+
+/**
+ * The installer's Prepare graphics calls (T4), typed here and checked before each use, so the layer compiles and runs
+ * against a toolkit without them.
+ */
+interface IGraphicsCapableInstaller {
+    /** Sets, replaces or clears the installer's graphics preparer. */
+    SetGraphicsPreparer?(preparer: GraphicsPreparer | null): void;
+    /** Prepares the graphics of stored scene groups (null = all of them); resolves true when every group was prepared. */
+    PrepareGraphicsAsync?(groupIds?: string[] | null, options?: { background?: boolean }): Promise<boolean>;
+}
+
+/** What the provider needs from `SceneShaderWarmup` of `@babylonjs-toolkit/next` (T4); checked before use. */
+interface IPrimingSceneWarmup {
+    /** Makes a preparer for a page with no engine: one hidden priming engine per step; null when none can be made. */
+    CreatePrimingGraphicsPreparerAsync?(options?: IContentPrimingEngineOptions): Promise<GraphicsPreparer | null>;
+    /** Primes each level with the shader variants a later load into it brings (more lights after a container load). */
+    PrimingMatchesLaterLoads?: boolean;
+}
 
 /** Props of ContentInstallerProvider. */
 export interface IContentInstallerProviderProps {
@@ -26,6 +63,24 @@ const IDLE_FALLBACK_DELAY_MS: number = 1500;
 const DEFAULT_INSTALL_POLICY: IContentInstallerState["installPolicy"] = "as-you-play";
 /** The installer's default update policy (D19), shown while it is unavailable. */
 const DEFAULT_UPDATE_POLICY: IContentInstallerState["updatePolicy"] = "prompt";
+/** Prefix of the one console warning a Prepare graphics that cannot run here gives. */
+const GRAPHICS_WARNING_PREFIX: string = "[ContentInstaller] Prepare graphics is not available here: ";
+/** The page globals the toolkit's package index sets; an exported project script bundle reads them when its scene loads. */
+interface IToolkitPageGlobals {
+    /** The toolkit namespace. */
+    TOOLKIT?: unknown;
+    /** The Babylon namespace. */
+    BABYLON?: unknown;
+}
+
+/** Reason when the toolkit's package index did not set its page globals. */
+const NO_TOOLKIT_GLOBALS_REASON: string = "the @babylonjs-toolkit/next index did not set window.TOOLKIT and window.BABYLON";
+/** Reason when the toolkit's scene module has no priming preparer. */
+const NO_PRIMING_PREPARER_REASON: string = "this @babylonjs-toolkit/next has no SceneShaderWarmup.CreatePrimingGraphicsPreparerAsync";
+/** Reason when the installer has no Prepare graphics step. */
+const NO_GRAPHICS_STEP_REASON: string = "this @babylonjs-toolkit/next ContentInstaller has no Prepare graphics step";
+/** Reason when the browser can make neither a WebGPU nor a WebGL2 engine. */
+const NO_PRIMING_ENGINE_REASON: string = "no hidden WebGPU or WebGL2 engine can be made in this browser";
 
 /** The loaded and initialized installer class, shared with `sceneLoad.ts`; null until then. */
 let loadedContentInstaller: ContentInstallerClass | null = null;
@@ -65,7 +120,8 @@ export function loadContentInstallerNow(): Promise<ContentInstallerClass | null>
  * @returns The state.
  */
 function createUnavailableState(hostOptions: IContentInstallerHostOptions, reason: string): IContentInstallerState {
-    return {
+    // The graphics fields are typed by the layer, so the state compiles with and without a toolkit that has them.
+    const unavailableState: IContentInstallerState & IContentGraphicsStateFields = {
         availability: "unavailable",
         reason,
         installPolicy: hostOptions.installPolicy ?? DEFAULT_INSTALL_POLICY,
@@ -82,7 +138,14 @@ function createUnavailableState(hostOptions: IContentInstallerHostOptions, reaso
         applyOnNextLoad: false,
         shellUpdateReady: false,
         lastError: null,
+        contentChangedOnServer: false,
+        graphicsAvailable: false,
+        graphicsPreparing: false,
+        graphicsNeeded: false,
+        graphicsPreparedCount: 0,
+        graphicsGroupCount: 0,
     };
+    return unavailableState;
 }
 
 /**
@@ -121,12 +184,95 @@ function describeError(error: unknown): string {
 }
 
 /**
- * The installer calls, each made on the loaded installer at call time (inert before it loaded).
+ * Gives the installer its graphics preparer: loads the toolkit's package index (only for a player who downloaded or
+ * prepares, never on idle for everyone, so a player who never downloads never loads Babylon on the menu), runs the
+ * host's set-up, and makes a priming preparer with the host's engine options. The index, not just the scene module:
+ * it sets `window.TOOLKIT` and `window.BABYLON`, which the project script bundle of an exported scene reads when the
+ * preparer loads that scene, as the game's own page sets them before its first scene. The preparer makes its hidden
+ * engine when the first scene is prepared and disposes it when the step ends.
+ * @param installer - The loaded installer.
+ * @param hostOptions - The app's installer options.
+ * @returns Null when the preparer is set, else why it cannot be.
+ */
+async function setGraphicsPreparer(installer: ContentInstallerClass, hostOptions: IContentInstallerHostOptions): Promise<string | null> {
+    const graphicsInstaller: ContentInstallerClass & IGraphicsCapableInstaller = installer as ContentInstallerClass & IGraphicsCapableInstaller;
+    if (typeof graphicsInstaller.SetGraphicsPreparer !== "function" || typeof graphicsInstaller.PrepareGraphicsAsync !== "function") return NO_GRAPHICS_STEP_REASON;
+    const toolkitModule = await import("@babylonjs-toolkit/next");
+    // Reading the namespace keeps the index and its global-setting side effect in production builds ("sideEffects": false).
+    const toolkitExportCount: number = Object.keys(toolkitModule).length;
+    const pageGlobals: Window & IToolkitPageGlobals = window as Window & IToolkitPageGlobals;
+    if (toolkitExportCount === 0 || pageGlobals.TOOLKIT == null || pageGlobals.BABYLON == null) return NO_TOOLKIT_GLOBALS_REASON;
+    const sceneWarmup: typeof toolkitModule.SceneShaderWarmup & IPrimingSceneWarmup = toolkitModule.SceneShaderWarmup as typeof toolkitModule.SceneShaderWarmup & IPrimingSceneWarmup;
+    if (typeof sceneWarmup.CreatePrimingGraphicsPreparerAsync !== "function") return NO_PRIMING_PREPARER_REASON;
+    if (hostOptions.primingMatchesLaterLoads === true && sceneWarmup.PrimingMatchesLaterLoads !== undefined) sceneWarmup.PrimingMatchesLaterLoads = true;
+    await hostOptions.beforeGraphicsPreparation?.();
+    const primingEngineOptions: IContentPrimingEngineOptions = hostOptions.primingEngineOptions ?? DEFAULT_PRIMING_ENGINE_OPTIONS;
+    const preparer: GraphicsPreparer | null = await sceneWarmup.CreatePrimingGraphicsPreparerAsync(primingEngineOptions);
+    if (preparer == null) return NO_PRIMING_ENGINE_REASON;
+    const hostPreparer: GraphicsPreparer = hostOptions.wrapGraphicsPreparer?.(preparer as IContentScenePreparer) ?? preparer;
+    graphicsInstaller.SetGraphicsPreparer(hostPreparer);
+    return null;
+}
+
+/**
+ * The installer calls, each made on the loaded installer at call time (inert before it loaded). Prepare graphics (an
+ * install with `prepareGraphics`, or `prepareGraphics()`) first gives the installer its preparer, once per page; when
+ * that fails the step is skipped, `onGraphicsUnavailable` runs and the download goes on as before.
+ * @param hostOptions - The app's installer options (`prepareGraphics`, the priming engine's options and set-up).
+ * @param onGraphicsUnavailable - Runs once when Prepare graphics cannot run in this browser.
  * @returns The actions.
  */
-function createActions(): IContentInstallerActions {
+function createActions(hostOptions: IContentInstallerHostOptions, onGraphicsUnavailable: () => void): IContentInstallerActions {
+    const isGraphicsEnabled: boolean = hostOptions.prepareGraphics !== false;
+    // The one attempt of this page to set the preparer; later calls share its answer.
+    let graphicsReady: Promise<boolean> | null = null;
+    const trySetGraphicsPreparer = async (installer: ContentInstallerClass): Promise<boolean> => {
+        let unavailableReason: string | null;
+        try {
+            unavailableReason = await setGraphicsPreparer(installer, hostOptions);
+        } catch (error) {
+            unavailableReason = describeError(error);
+        }
+        if (unavailableReason == null) return true;
+        console.warn(GRAPHICS_WARNING_PREFIX + unavailableReason);
+        onGraphicsUnavailable();
+        return false;
+    };
+    const ensureGraphicsPreparer = (installer: ContentInstallerClass): Promise<boolean> => {
+        if (!isGraphicsEnabled) return Promise.resolve(false);
+        graphicsReady ??= trySetGraphicsPreparer(installer);
+        return graphicsReady;
+    };
+    const install = async (groupIds?: string[] | null, options?: IContentInstallActionOptions): Promise<boolean> => {
+        const installer: ContentInstallerClass | null = loadedContentInstaller;
+        if (installer == null) return false;
+        // The preparer is set before the download starts, so the installer finds it when the download ends.
+        const prepareGraphics: boolean = options?.prepareGraphics === true && await ensureGraphicsPreparer(installer);
+        const installOptions: IContentInstallActionOptions = { ...options, prepareGraphics };
+        return installer.Install(groupIds ?? null, installOptions);
+    };
+    const prepareGraphics = async (groupIds?: string[] | null): Promise<boolean> => {
+        const installer: ContentInstallerClass | null = loadedContentInstaller;
+        if (installer == null || !(await ensureGraphicsPreparer(installer))) return false;
+        const graphicsInstaller: ContentInstallerClass & IGraphicsCapableInstaller = installer as ContentInstallerClass & IGraphicsCapableInstaller;
+        try {
+            return (await graphicsInstaller.PrepareGraphicsAsync?.(groupIds ?? null)) === true;
+        } catch (error) {
+            console.warn(GRAPHICS_WARNING_PREFIX + describeError(error));
+            return false;
+        }
+    };
+    const loadGraphicsPreparer = (): void => {
+        const installer: ContentInstallerClass | null = loadedContentInstaller;
+        if (installer == null || !isGraphicsEnabled || graphicsReady != null) return;
+        scheduleIdle(() => {
+            void ensureGraphicsPreparer(installer);
+        });
+    };
     return {
-        install: (groupIds, options) => loadedContentInstaller?.Install(groupIds ?? null, options) ?? Promise.resolve(false),
+        install,
+        prepareGraphics,
+        loadGraphicsPreparer,
         pause: () => loadedContentInstaller?.Pause(),
         resume: () => loadedContentInstaller?.Resume(),
         cancel: () => loadedContentInstaller?.Cancel(),
@@ -158,8 +304,11 @@ function createActions(): IContentInstallerActions {
 export function ContentInstallerProvider(props: IContentInstallerProviderProps): ReactElement {
     const { options, children } = props;
     const [state, setState] = useState<IContentInstallerState | null>(null);
+    // Set once a Prepare graphics found that no preparer can be made here: the Prepare graphics button then stays hidden.
+    const [isGraphicsUnavailable, setGraphicsUnavailable] = useState<boolean>(false);
     const progressListeners = useRef<Set<ProgressListener>>(new Set<ProgressListener>());
-    const actions: IContentInstallerActions = useMemo(() => createActions(), []);
+    const actions: IContentInstallerActions = useMemo(() => createActions(options, () => setGraphicsUnavailable(true)), [options]);
+    const graphicsEnabled: boolean = options.prepareGraphics !== false && !isGraphicsUnavailable;
 
     const subscribeProgress = useCallback((listener: ProgressListener): (() => void) => {
         progressListeners.current.add(listener);
@@ -223,8 +372,8 @@ export function ContentInstallerProvider(props: IContentInstallerProviderProps):
     }, [options]);
 
     const contextValue: IContentInstallerContextValue = useMemo(
-        () => ({ state, actions, subscribeProgress }),
-        [state, actions, subscribeProgress],
+        () => ({ state, actions, subscribeProgress, graphicsEnabled }),
+        [state, actions, subscribeProgress, graphicsEnabled],
     );
 
     if (!options.enabled) return <>{children}</>;

@@ -1,12 +1,25 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { AbstractEngine, DracoDecoder, Engine, FreeCamera, Nullable, Observer, Scene, Vector3, WebGPUEngine } from "@babylonjs/core";
+import { AbstractEngine, Camera, DracoDecoder, Engine, FreeCamera, Nullable, Observer, Scene, Vector3, WebGPUEngine } from "@babylonjs/core";
 import { KhronosTextureContainer2 } from "@babylonjs/core/Misc/khronosTextureContainer2";
 import { SceneManager } from "@babylonjs-toolkit/next/scenemanager";
 import GameManager from "../globals";
 
-const DEFAULT_ENGINE_OPTIONS = {};
+/**
+ * Default WebGL context attributes.
+ *
+ * `preserveDrawingBuffer: true` keeps the rendered frame readable after the browser composites it,
+ * which is what makes `canvas.toDataURL()` — and therefore any screenshot of the running game —
+ * return the actual frame instead of a fully transparent image. Babylon defaults it to `false`
+ * (`thinEngine`: `if (options.preserveDrawingBuffer === undefined) options.preserveDrawingBuffer = false`),
+ * so without this a screenshot silently succeeds and produces a blank PNG.
+ *
+ * ⚠️ This applies to the WebGL engine ONLY. The WebGPU path below is preferred whenever the browser
+ * supports it, and Babylon's WebGPU engine has no such option — so do not read this as "screenshots
+ * are solved"; on WebGPU that depends on the browser's canvas readback, not on anything set here.
+ */
+const DEFAULT_ENGINE_OPTIONS = { preserveDrawingBuffer: true };
 
 export declare type BabylonjsProps = {
   webgpu?: boolean;
@@ -65,7 +78,14 @@ function BaseSceneViewer(props: BabylonjsProps & React.CanvasHTMLAttributes<HTML
           const canvas = reactCanvas.current;
           if (!canvas) return;
 
-          let engineOptionsToUse = engineOptions != null ? { ...engineOptions } : { ...DEFAULT_ENGINE_OPTIONS };
+          /*
+           * Defaults FIRST, caller's options over the top — so passing `engineOptions` overrides only
+           * the keys it names. The previous form replaced the defaults wholesale, which meant any
+           * project supplying one option (say `{ stencil: true }`) silently lost
+           * `preserveDrawingBuffer` and its screenshots went blank again, for a reason nowhere near
+           * the change that caused it.
+           */
+          let engineOptionsToUse: any = { ...DEFAULT_ENGINE_OPTIONS, ...(engineOptions ?? {}) };
           if (legacyAudio === true) engineOptionsToUse.audioEngine = legacyAudio;
 
           /*
@@ -172,6 +192,15 @@ function BaseSceneViewer(props: BabylonjsProps & React.CanvasHTMLAttributes<HTML
               const defaultCamera = new FreeCamera("defaultCamera", new Vector3(0, 5, -10), scene);
               defaultCamera.setTarget(Vector3.Zero());
               scene.activeCamera = defaultCamera;
+              // The placeholder only stands in until the scene gets a camera of its own. Babylon makes the first
+              // camera active when none is, so without this hand-over a loaded scene whose camera is not the tagged
+              // main camera would keep rendering through the placeholder instead of its own camera.
+              const placeholderScene: Scene = scene;
+              placeholderScene.onNewCameraAddedObservable.addOnce((addedCamera: Camera) => {
+                  if (placeholderScene.activeCamera !== defaultCamera) return;
+                  placeholderScene.activeCamera = addedCamera;
+                  defaultCamera.dispose();
+              });
 
               const handleSceneReady = (readyScene: Scene): void => {
                   if (!disposeRequested) onCreateScene(readyScene);
@@ -193,6 +222,10 @@ function BaseSceneViewer(props: BabylonjsProps & React.CanvasHTMLAttributes<HTML
               engine.runRenderLoop(() => {
                   if (disposeRequested || !scene || scene.isDisposed) return;
                   if (typeof onRender === "function") onRender(scene);
+                  // A scene can briefly have no camera while a loaded camera is replaced (for example by its rig),
+                  // and Scene.render() throws without one, so that frame is skipped.
+                  const hasCamera: boolean = scene.activeCamera != null || (scene.activeCameras != null && scene.activeCameras.length > 0);
+                  if (!hasCamera) return;
                   scene.render();
               });
 
@@ -242,8 +275,9 @@ function BaseSceneViewer(props: BabylonjsProps & React.CanvasHTMLAttributes<HTML
           // Note: The React navigation hook is owned by ReactRouterNavAdapter (app-wide),
           // so it is intentionally NOT deleted here when the scene viewer unmounts.
 
+          // The toolkit disposal releases its per-scene state too (a SceneLoad remount reuses the page).
           if (scene && !scene.isDisposed) {
-              try { scene.dispose(); } catch (e) { console.warn(e); }
+              try { SceneManager.DisposeScene(scene); } catch (disposeError) { console.warn(disposeError); }
           }
 
           if (engine) {

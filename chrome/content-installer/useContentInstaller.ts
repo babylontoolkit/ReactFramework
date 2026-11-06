@@ -1,10 +1,34 @@
 import { createContext, useContext } from "react";
 import type { IContentGroupStatus, IContentInstallerState, IContentInstallProgress, IContentStorageEstimate } from "@babylonjs-toolkit/next";
 
+/** Options of `IContentInstallerActions.install`. */
+export interface IContentInstallActionOptions {
+    /** Waits while the game is busy (SetBusy), one file at a time. */
+    background?: boolean;
+    /**
+     * After the download, prepares the graphics of every stored level and container (compiles their shaders on a hidden
+     * engine, so each later load starts faster). Ignored when the host turned Prepare graphics off or the toolkit has none.
+     */
+    prepareGraphics?: boolean;
+}
+
 /** The installer calls a host component can make; each is a safe no-op until the installer has loaded. */
 export interface IContentInstallerActions {
     /** Installs groups (null or empty = everything, app shell included); resolves true when all of them are installed. */
-    install(groupIds?: string[] | null, options?: { background?: boolean }): Promise<boolean>;
+    install(groupIds?: string[] | null, options?: IContentInstallActionOptions): Promise<boolean>;
+    /**
+     * Prepares the graphics of stored scene groups (null or empty = every stored level and container): loads each one on
+     * a hidden engine made for the step, compiles its shaders and disposes it. Pause, Resume and Cancel control it as
+     * they control a download. Resolves true when every group was prepared; false at once when it cannot run.
+     */
+    prepareGraphics(groupIds?: string[] | null): Promise<boolean>;
+    /**
+     * Gives the installer its graphics preparer once the browser is idle (once per page), without preparing anything:
+     * until then the installer cannot tell graphics prepared for another engine (WebGPU versus WebGL2) or another toolkit
+     * runtime from current ones. Call it where a player who downloaded the game data sees whether its graphics are
+     * prepared (the dialog's Downloaded state); it loads the toolkit, so never call it for everyone.
+     */
+    loadGraphicsPreparer(): void;
     /** Pauses the running install after the files already downloading. */
     pause(): void;
     /** Resumes a paused install. */
@@ -35,11 +59,18 @@ export interface IContentInstallerContextValue {
     actions: IContentInstallerActions;
     /** Subscribes to throttled progress (telemetry: write it through refs, never React state); returns the unsubscribe. */
     subscribeProgress(listener: (progress: IContentInstallProgress) => void): () => void;
+    /**
+     * True while the host prepares graphics (its `prepareGraphics` option, on by default) and no attempt found that no
+     * hidden engine can be made in this browser; read with the state to show the Prepare graphics button.
+     */
+    graphicsEnabled: boolean;
 }
 
 /** Actions used outside a provider, or while the layer is disabled: they do nothing. */
 const INERT_ACTIONS: IContentInstallerActions = {
     install: () => Promise.resolve(false),
+    prepareGraphics: () => Promise.resolve(false),
+    loadGraphicsPreparer: () => undefined,
     pause: () => undefined,
     resume: () => undefined,
     cancel: () => undefined,
@@ -57,6 +88,7 @@ const INERT_CONTEXT_VALUE: IContentInstallerContextValue = {
     state: null,
     actions: INERT_ACTIONS,
     subscribeProgress: () => () => undefined,
+    graphicsEnabled: false,
 };
 
 /** The content installer context, filled by `ContentInstallerProvider`. */

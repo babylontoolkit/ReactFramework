@@ -27,8 +27,8 @@ function readLocalStorage(): Storage | null {
 /**
  * The installed-app offer (D7; unstyled, the app skins its class hooks): on a standalone launch whose game data is not
  * all on the device, a card "Download the game data to this device — <size>" with Download and Maybe Later. Shown once:
- * either button records the answer; Download also starts downloading everything (its progress shows in the host's
- * Download Game Data dialog).
+ * either button records the answer; Download also starts downloading everything, then prepares its graphics (its
+ * progress shows in the host's Download Game Data dialog).
  * @param props - Extra class names.
  * @returns The card, or null when there is nothing to offer.
  */
@@ -43,7 +43,7 @@ export function ContentInstallOffer(props: IContentInstallOfferProps): ReactElem
     const answer = (downloadEverything: boolean): void => {
         rememberInstallOfferAnswered(readLocalStorage(), STANDALONE_OFFER_STORAGE_KEY);
         setAnswered(true);
-        if (downloadEverything) void actions.install(null);
+        if (downloadEverything) void actions.install(null, { prepareGraphics: true });
     };
     const rootClassName: string = className ? `content-install-offer ${className}` : "content-install-offer";
 
